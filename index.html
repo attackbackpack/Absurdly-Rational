@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Absurdly Rational</title>
+  <meta name="description" content="Unapologetically irreverent, absurdist thoughts on why rationality must be defended.">
+  <link rel="icon" href="assets/rooster-light.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Continuous ambient colour field — parallax-scrolls behind the whole page -->
+  <div class="field-wrap" id="glow" aria-hidden="true">
+    <div class="field" id="field">
+      <span class="blob" style="top:8vh;right:-12%;width:640px;height:640px;max-width:66vw;--c:217,130,255;--a:.18"></span>
+      <span class="blob" style="top:48vh;left:-14%;width:680px;height:680px;max-width:70vw;--c:96,134,255;--a:.30"></span>
+      <span class="blob" style="top:88vh;left:30%;width:540px;height:540px;max-width:56vw;--c:110,224,205;--a:.24"></span>
+      <span class="blob" style="top:128vh;left:-16%;width:640px;height:640px;max-width:64vw;--c:199,174,255;--a:.30"></span>
+      <span class="blob" style="top:160vh;right:-14%;width:600px;height:600px;max-width:62vw;--c:217,130,255;--a:.16"></span>
+      <span class="blob" style="top:205vh;left:26%;width:520px;height:520px;max-width:54vw;--c:110,224,205;--a:.12"></span>
+      <span class="blob" style="top:245vh;right:4%;width:560px;height:560px;max-width:58vw;--c:110,224,205;--a:.15"></span>
+      <span class="blob" style="top:288vh;left:-16%;width:640px;height:640px;max-width:64vw;--c:199,174,255;--a:.16"></span>
+      <span class="blob" style="top:322vh;left:42%;width:480px;height:480px;max-width:50vw;--c:96,134,255;--a:.10"></span>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner" id="navInner">
+      <a class="brand" href="#top">
+        <img src="assets/rooster-light.png" alt="">
+        <span>Absurdly Rational</span>
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="#about">About me</a>
+        <a class="nav-cta" href="#find">Where to find us</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="top">
+    <div class="rings" id="rings">
+      <span class="ring ring-1"></span>
+      <span class="ring ring-2"></span>
+      <span class="ring ring-3"></span>
+    </div>
+    <span class="wave" id="wave"></span>
+    <span class="wave" id="wave2"></span>
+    <span class="hero-glow"></span>
+    <img class="rooster" id="rooster" src="assets/rooster-light.png" alt="Absurdly Rational">
+    <span class="badge js-intro" id="badge">@absurdlyrational</span>
+    <h1 class="title js-intro" id="title">Absurdly<br>Rational</h1>
+    <p class="lead js-intro" id="lead">Unapologetically irreverent, absurdist thoughts on why rationality must be defended — against the existential threats of confident ignorance and directed disinformation.</p>
+    <a class="hero-cta js-intro" id="cta" href="#find">Find the flock →</a>
+  </section>
+
+  <!-- Manifesto -->
+  <section class="manifesto" id="about">
+    <div class="eyebrow">The premise</div>
+    <p class="manifesto-line">Confident ignorance is loud. So is a rooster.</p>
+    <p class="manifesto-line">Directed disinformation, met with undirected ridicule.</p>
+    <p class="manifesto-line">Reason deserves a defender who refuses to take itself seriously.</p>
+    <p class="manifesto-note">No sermons, no certainty for sale. Just a stubborn rooster crowing at the noise — making the case for thinking clearly in a world that profits from the opposite.</p>
+  </section>
+
+  <!-- Find us -->
+  <section class="find" id="find">
+    <h2 class="find-title">Where to find us</h2>
+    <p class="find-sub">Same voice, four soapboxes. Pick your platform and join the racket.</p>
+    <div class="platforms">
+
+      <a class="platform" href="https://substack.com/@absurdlyrational" target="_blank" rel="noopener">
+        <span class="platform-icon" style="background:#FF6719">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 3.5h17v2.4h-17V3.5zm0 4.6h17v2.4h-17V8.1zm0 4.6L12 17l8.5-4.3V21L12 16.7 3.5 21v-8.3z"/></svg>
+        </span>
+        <span class="platform-text">
+          <span class="platform-name">Substack</span>
+          <span class="platform-desc">The long-form crowing</span>
+        </span>
+        <span class="platform-arrow">↗</span>
+      </a>
+
+      <a class="platform" href="https://open.spotify.com/show/2THvy96eG61wpOeJEWsGKO" target="_blank" rel="noopener">
+        <span class="platform-icon" style="background:#1DB954">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm4.59 14.43a.62.62 0 01-.86.21c-2.35-1.44-5.3-1.76-8.79-.96a.62.62 0 11-.28-1.21c3.81-.87 7.08-.5 9.72 1.11.3.18.39.57.21.85zm1.22-2.72a.78.78 0 01-1.07.26c-2.69-1.65-6.79-2.13-9.97-1.17a.78.78 0 11-.45-1.49c3.63-1.1 8.15-.56 11.23 1.33.37.22.49.7.26 1.07zm.11-2.84C14.8 8.96 9.3 8.78 6.23 9.71a.93.93 0 11-.54-1.79c3.53-1.07 9.6-.86 13.38 1.39a.94.94 0 01-.96 1.6z"/></svg>
+        </span>
+        <span class="platform-text">
+          <span class="platform-name">Spotify</span>
+          <span class="platform-desc">Listen to the noise</span>
+        </span>
+        <span class="platform-arrow">↗</span>
+      </a>
+
+      <a class="platform" href="https://www.linkedin.com/in/caseyhussermd/recent-activity/all/" target="_blank" rel="noopener">
+        <span class="platform-icon" style="background:#0A66C2">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zM8.34 18.34V9.99H5.56v8.35h2.78zM6.95 8.76a1.61 1.61 0 100-3.23 1.61 1.61 0 000 3.23zm11.39 9.58v-4.57c0-2.45-1.31-3.59-3.06-3.59-1.41 0-2.04.78-2.39 1.32v-1.13h-2.78c.04.78 0 8.35 0 8.35h2.78v-4.66c0-.25.02-.5.09-.68.2-.5.66-1.01 1.43-1.01 1.01 0 1.42.77 1.42 1.9v4.45h2.78z"/></svg>
+        </span>
+        <span class="platform-text">
+          <span class="platform-name">LinkedIn</span>
+          <span class="platform-desc">Reason, professionally</span>
+        </span>
+        <span class="platform-arrow">↗</span>
+      </a>
+
+      <a class="platform" href="https://www.facebook.com/profile.php?id=61587316271301" target="_blank" rel="noopener">
+        <span class="platform-icon" style="background:#1877F2">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 10-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0022 12z"/></svg>
+        </span>
+        <span class="platform-text">
+          <span class="platform-name">Facebook</span>
+          <span class="platform-desc">Arguing in good faith</span>
+        </span>
+        <span class="platform-arrow">↗</span>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand">
+      <img src="assets/rooster-light.png" alt="">
+      <span>Absurdly Rational</span>
+    </div>
+    <p class="footer-note">Defending reason, one absurdity at a time. © 2026</p>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
