@@ -1,5 +1,5 @@
 /* ===========================================================
-   Absurdly Rational — interactions
+   Absurdly Rational(almost done) — interactions
    1. Intro: the rooster drops, rings burst, content + nav settle in.
    2. Scroll: nav collapses to a pill, hero rings contract, field parallax.
    =========================================================== */
@@ -29,14 +29,22 @@
                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- Scroll handling ---------- */
-  function onScroll() {
-    var pilled = window.scrollY > window.innerHeight * 0.72;
+  // rAF-batched: capture scroll position on every event, but only write to
+  // the DOM once per animation frame to prevent jitter on mobile.
+  var lastScrollY = 0;
+  var rafId = null;
+
+  function applyScroll() {
+    rafId = null;
+    var y = lastScrollY;
+
+    var pilled = y > window.innerHeight * 0.72;
     nav.classList.toggle('is-pilled', pilled);
 
     // Hero rings contract toward the centre as the hero scrolls away.
     if (introDone && rings) {
-      var p = Math.min(window.scrollY / window.innerHeight, 1);
-      var eased = p * p;                 // stay full early, then collapse
+      var p = Math.min(y / window.innerHeight, 1);
+      var eased = p * p;
       var scale = 1 - eased * 0.78;
       rings.style.transform = 'translate(-50%,-50%) scale(' + scale + ')';
       rings.style.opacity = String(1 - eased * 0.85);
@@ -45,7 +53,14 @@
     // Ambient field parallax-scrolls at half speed for a seamless colour flow.
     if (field) {
       field.style.transform =
-        'translate3d(0,' + (-window.scrollY * 0.5).toFixed(1) + 'px,0)';
+        'translate3d(0,' + (-y * 0.5).toFixed(1) + 'px,0)';
+    }
+  }
+
+  function onScroll() {
+    lastScrollY = window.scrollY;
+    if (!rafId) {
+      rafId = requestAnimationFrame(applyScroll);
     }
   }
   window.addEventListener('scroll', onScroll, { passive: true });
@@ -54,13 +69,10 @@
   function runIntro() {
     // Reduced motion or missing nodes: leave the resting state visible.
     if (reduce || !rooster) {
-      if (rings) {
-        rings.style.transition =
-          'transform 0.35s cubic-bezier(0.25,1,0.5,1), opacity 0.35s ease';
-      }
       content.forEach(function (c) { c.style.opacity = '1'; c.style.transform = 'none'; });
       introDone = true;
-      onScroll();
+      lastScrollY = window.scrollY;
+      applyScroll();
       return;
     }
 
@@ -180,11 +192,12 @@
         nav.style.transform = '';
         nav.style.opacity = '1';
       }
-      if (rings) {
-        rings.style.transition = 'transform 0.35s cubic-bezier(0.25,1,0.5,1), opacity 0.35s ease';
-      }
+      // rings.style.transition stays 'none' (set by clear above) so that
+      // scroll-driven transforms apply instantly each frame — no transition
+      // fighting scroll events and causing jitter.
       introDone = true;
-      onScroll();
+      lastScrollY = window.scrollY;
+      applyScroll();
     });
   }
 
