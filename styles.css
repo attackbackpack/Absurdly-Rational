@@ -141,8 +141,7 @@ img { display: block; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 120px 24px 30vh;
-  overflow: hidden;
+  padding: 120px 24px 6vh;
 }
 
 .rings {
@@ -152,6 +151,7 @@ img { display: block; }
   height: min(1500px, 138vw);
   transform: translate(-50%, -50%);
   pointer-events: none;
+  z-index: 0;
   will-change: transform, opacity;
 }
 .ring { position: absolute; border-radius: 50%; }
