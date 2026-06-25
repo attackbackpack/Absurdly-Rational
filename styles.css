@@ -223,7 +223,17 @@ img { display: block; }
   line-height: 1.5;
   color: #9AA3AE;
   max-width: 42ch;
+  margin: 0 0 18px;
+  text-wrap: balance;
+}
+.lead-tagline {
+  position: relative;
+  font-size: clamp(15px, 1.8vw, 19px);
+  line-height: 1.6;
+  color: #9AA3AE;
+  max-width: 40ch;
   margin: 0 0 44px;
+  font-style: italic;
   text-wrap: balance;
 }
 .hero-cta {
