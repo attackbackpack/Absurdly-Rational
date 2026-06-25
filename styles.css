@@ -393,6 +393,12 @@ img { display: block; }
   .nav-link  { display: none; }
 }
 
+@media (max-width: 480px) {
+  .brand span { display: none; }
+  .nav-inner  { gap: 12px; }
+  .nav-cta    { font-size: 12px; padding: 6px 12px; }
+}
+
 /* ---------- Reduced motion: skip the intro, show everything ---------- */
 @media (prefers-reduced-motion: reduce) {
   .js .js-intro { opacity: 1; transform: none; }
