@@ -253,10 +253,11 @@ function validateText(value, location) {
 }
 
 const site = readJson("_data/site.json");
+const editorGuide = readJson("_data/editor-guide.json");
 const readings = readJson("_data/readings.json");
 const podcasts = readJson("_data/podcasts.json");
 const memes = readJson("_data/memes.json");
-const datasets = { site, readings, podcasts, memes };
+const datasets = { site, editorGuide, readings, podcasts, memes };
 
 Object.entries(datasets).forEach(([name, data]) => {
   if (!data) {
@@ -273,6 +274,15 @@ Object.entries(datasets).forEach(([name, data]) => {
 
 if (site) {
   validateUrl(site.url, "_data/site.json.url");
+}
+
+if (editorGuide) {
+  if (editorGuide.branch !== "editor") {
+    fail("_data/editor-guide.json.branch: the protected editing branch must remain editor");
+  }
+  if (editorGuide.preview_url !== "https://absurdlyrational.com/preview/") {
+    fail("_data/editor-guide.json.preview_url: the draft preview URL must remain https://absurdlyrational.com/preview/");
+  }
 }
 
 if (readings) {

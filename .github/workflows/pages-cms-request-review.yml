@@ -1,0 +1,67 @@
+name: Request owner review for editor draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Pages CMS action payload
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pages-cms-request-review
+  cancel-in-progress: false
+
+jobs:
+  reject-production-branch:
+    if: github.ref != 'refs/heads/editor'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain the branch requirement
+        run: |
+          echo "Request owner review must be run from the editor branch in Pages CMS." >&2
+          exit 1
+
+  request-review:
+    if: github.ref == 'refs/heads/editor'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or refresh the editor review pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PAGES_CMS_PAYLOAD: ${{ inputs.payload }}
+          PREVIEW_URL: https://absurdlyrational.com/preview/
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$PAGES_CMS_PAYLOAD"
+
+          payload_digest="$(printf '%s' "$PAGES_CMS_PAYLOAD" | sha256sum | cut -d ' ' -f 1)"
+          pr_number="$(gh pr list \
+            --repo "$GH_REPO" \
+            --state open \
+            --head editor \
+            --base main \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          message="$(printf 'Pages CMS draft refreshed.\n\nPreview: %s\n\nThis editor branch is not live until the repository owner reviews and merges the pull request.\n\nWorkflow run: %s\nCMS action receipt: %s' "$PREVIEW_URL" "$RUN_URL" "${payload_digest:0:12}")"
+
+          if [ -n "$pr_number" ]; then
+            gh pr comment "$pr_number" --repo "$GH_REPO" --body "$message"
+            echo "Refreshed review pull request #$pr_number."
+          else
+            gh pr create \
+              --repo "$GH_REPO" \
+              --head editor \
+              --base main \
+              --title "Review website draft" \
+              --body "$message"
+            echo "Created the editor-to-main review pull request."
+          fi

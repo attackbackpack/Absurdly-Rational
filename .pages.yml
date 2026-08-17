@@ -18,6 +18,17 @@ media:
         ref: current
         cancelable: false
 
+actions:
+  - name: request-owner-review
+    label: Request owner review
+    workflow: pages-cms-request-review.yml
+    ref: current
+    cancelable: false
+    confirm:
+      title: Request owner review?
+      message: Save your edits first. This opens or refreshes the editor-to-main review request; it does not publish the live website.
+      button: Request review
+
 components:
   seo:
     type: object
@@ -171,6 +182,45 @@ components:
         description: Optional outlined stamp such as CITED or CITE.
 
 content:
+  - name: editing_workflow
+    label: Start here — preview & review
+    type: group
+    items:
+      - name: editor_guide
+        label: Dad's editing workflow
+        type: file
+        path: _data/editor-guide.json
+        format: json
+        operations:
+          create: false
+          rename: false
+          delete: false
+        fields:
+          - name: title
+            type: string
+            readonly: true
+          - name: branch
+            label: Branch to select before editing
+            type: string
+            readonly: true
+          - name: preview_url
+            label: Preview website
+            type: string
+            readonly: true
+            description: Open this address after saving and after the preview workflow finishes.
+          - name: save_behavior
+            label: What Save does
+            type: text
+            readonly: true
+          - name: review_behavior
+            label: How to request review
+            type: text
+            readonly: true
+          - name: publish_behavior
+            label: What publishes the live site
+            type: text
+            readonly: true
+
   - name: site_and_homepage
     label: Site & homepage
     type: group

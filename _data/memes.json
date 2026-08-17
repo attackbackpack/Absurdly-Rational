@@ -69,8 +69,8 @@
       "key": "receipts",
       "layout": "standard",
       "variant": "receipts",
-      "title": "Disinformation meets ridicule — with receipts.",
-      "aria_label": "Open meme: Disinformation meets ridicule, with receipts.",
+      "title": "Disinformation meets ridicule -with receipts!",
+      "aria_label": "Open meme: Disinformation meets ridicule -with receipts!",
       "caption": "A branded starter meme built from the site's existing manifesto line.",
       "visible": true,
       "image": {
@@ -90,8 +90,8 @@
       "key": "conflicts",
       "layout": "standard",
       "variant": "conflicts",
-      "title": "No conflicts of interest here. Just conflicts with unsupported claims.",
-      "aria_label": "Open meme: No conflicts of interest here. Just conflicts with unsupported claims.",
+      "title": "No conflicts of interest here, just conflicts with unsupported claims.",
+      "aria_label": "Open meme: No conflicts of interest here, just conflicts with unsupported claims.",
       "caption": "A branded starter meme built from the site's existing manifesto line.",
       "visible": true,
       "image": {

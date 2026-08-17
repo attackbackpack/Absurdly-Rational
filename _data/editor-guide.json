@@ -1,0 +1,8 @@
+{
+  "title": "Draft preview and owner review",
+  "branch": "editor",
+  "preview_url": "https://absurdlyrational.com/preview/",
+  "save_behavior": "Save writes your changes to the editor branch. It refreshes the draft preview but does not change the public website.",
+  "review_behavior": "After checking the preview, use Request owner review in the Pages CMS sidebar. Your saved draft will be sent to the repository owner for approval.",
+  "publish_behavior": "Only the repository owner publishes by approving and merging the editor branch into main."
+}

@@ -1,5 +1,6 @@
 url: https://absurdlyrational.com
 baseurl: ""
+preview: false
 timezone: America/Chicago
 markdown: kramdown
 permalink: pretty

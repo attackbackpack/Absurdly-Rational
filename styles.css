@@ -111,6 +111,40 @@ button { font: inherit; }
   margin-inline: auto;
 }
 
+.preview-status {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  min-height: 44px;
+  border-bottom: 1px solid rgba(110, 224, 205, 0.35);
+  background: #101e1c;
+  color: var(--text);
+}
+
+.preview-status__inner {
+  display: flex;
+  width: min(calc(100% - 32px), var(--page));
+  min-height: 44px;
+  align-items: center;
+  gap: 12px;
+  margin-inline: auto;
+  font-size: 0.82rem;
+}
+
+.preview-status__inner strong { color: var(--teal); }
+.preview-status__inner span { color: rgba(244, 246, 248, 0.76); }
+.preview-status__inner a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  margin-inline-start: auto;
+  color: var(--text);
+  font-weight: 650;
+  text-underline-offset: 4px;
+}
+
+.preview-mode .site-nav { inset-block-start: 44px; }
+
 .site-nav {
   position: fixed;
   inset: 0 0 auto;
