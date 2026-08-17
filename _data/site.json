@@ -1,0 +1,113 @@
+{
+  "name": "Absurdly Rational",
+  "url": "https://absurdlyrational.com",
+  "author": {
+    "name": "Casey Husser, MD",
+    "linkedin": "https://www.linkedin.com/in/caseyhussermd/"
+  },
+  "theme_color": "#07080A",
+  "brand_image": {
+    "path": "assets/rooster-light.png",
+    "alt": "The Absurdly Rational rooster mark",
+    "fit": "contain",
+    "focus": "center"
+  },
+  "navigation": [
+    {
+      "key": "readings",
+      "label": "Readings",
+      "url": "readings.html"
+    },
+    {
+      "key": "podcasts",
+      "label": "Podcasts",
+      "url": "podcasts.html"
+    },
+    {
+      "key": "memes",
+      "label": "Meme Bank",
+      "url": "memes.html"
+    }
+  ],
+  "footer": {
+    "note": "Defending reason, one absurdity at a time.",
+    "contact_label": "Contact"
+  },
+  "home": {
+    "seo": {
+      "title": "Absurdly Rational | Evidence, policy, and critical thinking",
+      "description": "Absurdly Rational is Casey Husser, MD's home for evidence-based medicine, health misinformation, healthcare policy, critical thinking, hospital life, podcasts, and memes.",
+      "og_title": "Absurdly Rational | Evidence, policy, and critical thinking",
+      "og_description": "Casey Husser, MD's evidence-based writing, physician podcast work, guest appearances, and memes for when the citations get exhausting.",
+      "twitter_description": "Evidence-based medicine, healthcare policy, critical thinking, hospital life, podcasts, and memes from Casey Husser, MD."
+    },
+    "hero": {
+      "title_line_one": "Absurdly",
+      "title_line_two": "Rational",
+      "thesis": "Reality, with better footnotes.",
+      "description": "Evidence-based medicine, healthcare policy, critical thinking, hospital life, and a few jokes for when the citations get exhausting.",
+      "cta_label": "Choose your format",
+      "cta_url": "#formats",
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "contain",
+        "focus": "center"
+      }
+    },
+    "formats_intro": {
+      "title": "Pick your frequency.",
+      "description": "Three ways into the same argument with confident ignorance."
+    },
+    "formats": [
+      {
+        "key": "readings",
+        "class_name": "readings",
+        "title": "Selected Readings",
+        "description": "Evidence versus hype, healthcare policy, clinical decision-making, and life in the hospital.",
+        "meta": "Long reads on Substack",
+        "url": "readings.html",
+        "image": {
+          "path": "",
+          "alt": "",
+          "fit": "cover",
+          "focus": "center"
+        }
+      },
+      {
+        "key": "podcasts",
+        "class_name": "podcasts",
+        "title": "Podcasts",
+        "description": "Physician podcast conversations about medical judgment and healthcare decision-making.",
+        "meta": "Listen and guest appearances",
+        "url": "podcasts.html",
+        "image": {
+          "path": "",
+          "alt": "",
+          "fit": "cover",
+          "focus": "center"
+        }
+      },
+      {
+        "key": "memes",
+        "class_name": "memes",
+        "title": "Meme Bank",
+        "description": "Read less. Laugh more. Retain at least one fact.",
+        "meta": "A starter set of branded absurdity",
+        "url": "memes.html",
+        "image": {
+          "path": "",
+          "alt": "",
+          "fit": "cover",
+          "focus": "center"
+        }
+      }
+    ],
+    "context": {
+      "title": "Reason deserves a defender.",
+      "description": "Casey Husser, MD writes and talks about what happens when evidence meets incentives, policy meets practice, and hospital life refuses to behave like television.",
+      "aside": "When shilling for Big Reality, the pay is terrible. The satisfaction is endless.",
+      "contact_label": "Say hello on LinkedIn"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+<nav class="site-nav" id="site-nav" aria-label="Primary navigation">
+  <div class="nav-inner">
+    <a class="brand" href="{{ "/index.html" | relative_url }}" aria-label="{{ site.data.site.name }} home">
+      <img src="{{ site.data.site.brand_image.path | relative_url }}" alt="">
+      <span>{{ site.data.site.name }}</span>
+    </a>
+    <div class="nav-links">
+      {% for item in site.data.site.navigation %}
+      <a class="nav-link" href="{{ item.url | relative_url }}" data-page-link="{{ item.key }}"{% if include.current == item.key %} aria-current="page"{% endif %}>{{ item.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,153 @@
+{
+  "page": {
+    "seo": {
+      "title": "Meme Bank | Absurdly Rational",
+      "description": "The Absurdly Rational meme bank: original starter memes for when you want to read less and laugh more, with a little evidence left intact.",
+      "og_title": "Meme Bank | Absurdly Rational",
+      "og_description": "Original Absurdly Rational starter memes for when you want to read less and laugh more, with a little evidence left intact.",
+      "twitter_description": "Original starter memes for when you want to read less and laugh more."
+    },
+    "title": "Meme Bank",
+    "lede": "Memes for when you want to read less and laugh more.",
+    "tile_action_label": "Open meme",
+    "dialog_title": "Meme",
+    "dialog_close_label": "Close",
+    "dialog_previous_label": "Previous",
+    "dialog_next_label": "Next",
+    "dialog_navigation_label": "Meme navigation",
+    "starter_note_aria": "About this starter meme set",
+    "wall_aria": "Absurdly Rational starter memes",
+    "starter_note": {
+      "label": "Starter set.",
+      "description": "These are original branded concepts assembled from supplied Absurdly Rational site lines. They are not presented as externally published posts."
+    }
+  },
+  "items": [
+    {
+      "key": "confident-ignorance",
+      "layout": "wide",
+      "variant": "rooster",
+      "title": "Confident ignorance is loud. Truth must crow louder.",
+      "aria_label": "Open meme: Confident ignorance is loud. Truth must crow louder.",
+      "caption": "A branded starter meme built from the site's existing manifesto line.",
+      "visible": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "ABSURDLY RATIONAL",
+        "headline": "Confident\nignorance\nis loud.",
+        "accent": "TRUTH MUST CROW LOUDER.",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "big-reality",
+      "layout": "tall",
+      "variant": "big-reality",
+      "title": "When shilling for Big Reality: The pay is terrible, but the satisfaction is endless.",
+      "aria_label": "Open meme: When shilling for Big Reality, the pay is terrible.",
+      "caption": "A branded starter meme built from the site's existing tagline.",
+      "visible": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "CAREER PATH",
+        "headline": "Shilling for\nBig Reality",
+        "accent": "pay: terrible\nsatisfaction: endless",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "receipts",
+      "layout": "standard",
+      "variant": "receipts",
+      "title": "Disinformation meets ridicule — with receipts.",
+      "aria_label": "Open meme: Disinformation meets ridicule, with receipts.",
+      "caption": "A branded starter meme built from the site's existing manifesto line.",
+      "visible": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "THE METHOD",
+        "headline": "Ridicule\nwith\nreceipts.",
+        "accent": "",
+        "stamp": "CITED"
+      }
+    },
+    {
+      "key": "conflicts",
+      "layout": "standard",
+      "variant": "conflicts",
+      "title": "No conflicts of interest here. Just conflicts with unsupported claims.",
+      "aria_label": "Open meme: No conflicts of interest here. Just conflicts with unsupported claims.",
+      "caption": "A branded starter meme built from the site's existing manifesto line.",
+      "visible": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "DISCLOSURE",
+        "headline": "No conflicts\nof interest.",
+        "accent": "Just conflicts\nwith bad claims.",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "snake-oil",
+      "layout": "wide-low",
+      "variant": "snake-oil",
+      "title": "Snake oil burns to warm perception.",
+      "aria_label": "Open meme: Snake oil burns to warm perception.",
+      "caption": "A branded starter meme built from the site's existing manifesto line.",
+      "visible": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "EMERGENCY HEAT",
+        "headline": "Snake oil\nburns nicely.",
+        "accent": "warming perception since forever",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "read-less",
+      "layout": "small",
+      "variant": "read-less",
+      "title": "Read less. Laugh more. Cite responsibly.",
+      "aria_label": "Open meme: Read less. Laugh more. Cite responsibly.",
+      "caption": "A branded starter meme built from the page brief.",
+      "visible": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "Read less.\nLaugh more.",
+        "accent": "",
+        "stamp": "CITE"
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "page": {
+    "seo": {
+      "title": "Podcasts | The Absurdly Rational Podcast",
+      "description": "Listen to The Absurdly Rational Podcast and verified guest appearances about medical judgment, healthcare decision-making, AI, policy, and practice.",
+      "og_title": "Podcasts | The Absurdly Rational Podcast",
+      "og_description": "A physician podcast about medical judgment, healthcare decision-making, AI, policy, practice, and the parts of the system that refuse to stay tidy.",
+      "twitter_description": "A physician podcast about medical judgment, healthcare decision-making, AI, policy, and practice."
+    },
+    "title": "Podcasts",
+    "lede": "A physician podcast about medical judgment, healthcare decision-making, and the moments when policy and practice collide.",
+    "show": {
+      "title": "The Absurdly Rational Podcast",
+      "description": "Conversations where evidence-based medicine, critical thinking, health misinformation, and the lived reality of healthcare get to argue in public.",
+      "meta": "The home show",
+      "label": "AR / LIVE",
+      "button_label": "Listen on Spotify",
+      "url": "https://open.spotify.com/show/2THvy96eG61wpOeJEWsGKO",
+      "new_tab": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    "guests_heading": "Guest appearances",
+    "guests_description": "Other rooms where the same questions get a different microphone.",
+    "invite": {
+      "title": "Want to be on it? Let me know!",
+      "description": "Have a sharp question, a strange system, or a claim that needs a closer look? Send a note.",
+      "button_label": "Contact Casey Husser, MD",
+      "url": "https://www.linkedin.com/in/caseyhussermd/",
+      "new_tab": true
+    }
+  },
+  "guests": [
+    {
+      "key": "stanford",
+      "class_name": "stanford",
+      "title": "Legal Reasoning at Machine Speed: AI Legal Agents in Critical Decision-Making",
+      "description": "An episode about AI legal agents and the reasoning required when technology enters consequential decisions.",
+      "meta": "Stanford University / guest appearance",
+      "visible": true,
+      "art_label": "EP 02",
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "links": [
+        {
+          "label": "Watch the episode",
+          "url": "https://youtu.be/B5Cze7JE3uE",
+          "new_tab": true,
+          "arrow": true
+        },
+        {
+          "label": "Stanford program page",
+          "url": "https://cisac.fsi.stanford.edu/gtg/future-decision-making",
+          "new_tab": true,
+          "arrow": false
+        }
+      ]
+    },
+    {
+      "key": "architect",
+      "class_name": "architect",
+      "title": "Be a Health Architect",
+      "description": "Explore the show’s health architecture conversations and the systems around practical care.",
+      "meta": "Guest appearance",
+      "visible": true,
+      "art_label": "",
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "cover",
+        "focus": "center"
+      },
+      "links": [
+        {
+          "label": "Visit Be a Health Architect",
+          "url": "https://beahealtharchitect.com/",
+          "new_tab": true,
+          "arrow": true
+        }
+      ]
+    }
+  ]
+}

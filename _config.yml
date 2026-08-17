@@ -1,0 +1,17 @@
+url: https://absurdlyrational.com
+baseurl: ""
+timezone: America/Chicago
+markdown: kramdown
+permalink: pretty
+
+exclude:
+  - .github
+  - .impeccable
+  - .pages.yml
+  - DESIGN.md
+  - OWNER_CMS_SETUP.md
+  - PRODUCT.md
+  - node_modules
+  - package.json
+  - package-lock.json
+  - scripts

@@ -1,0 +1,84 @@
+---
+permalink: /memes.html
+---
+{% assign memes = site.data.memes %}
+{% include head.html seo=memes.page.seo canonical_path="/memes.html" schema_type="CollectionPage" schema_name="Meme Bank" schema_description=memes.page.seo.description %}
+<body class="page-memes" data-page="memes">
+  {% include field.html late=true %}
+  {% include nav.html current="memes" %}
+
+  <main class="page-shell">
+    <header class="page-intro page-intro--meme">
+      <h1>{{ memes.page.title }}</h1>
+      <p class="page-lede">{{ memes.page.lede }}</p>
+    </header>
+
+    <aside class="starter-note" aria-label="{{ memes.page.starter_note_aria }}">
+      <span class="starter-note-mark" aria-hidden="true">AR</span>
+      <p><strong>{{ memes.page.starter_note.label }}</strong> {{ memes.page.starter_note.description }}</p>
+    </aside>
+
+    <section class="meme-wall" aria-label="{{ memes.page.wall_aria }}">
+      {% for item in memes.items %}
+        {% unless item.visible == false %}
+          {% assign layout_class = "" %}
+          {% case item.layout %}
+            {% when "wide" %}{% assign layout_class = "meme-tile--wide" %}
+            {% when "tall" %}{% assign layout_class = "meme-tile--tall" %}
+            {% when "wide-low" %}{% assign layout_class = "meme-tile--wide meme-tile--low" %}
+            {% when "small" %}{% assign layout_class = "meme-tile--small" %}
+            {% when "standard" %}{% assign layout_class = "" %}
+          {% endcase %}
+          {% assign variant_class = "meme-art--rooster" %}
+          {% case item.variant %}
+            {% when "rooster" %}{% assign variant_class = "meme-art--rooster" %}
+            {% when "big-reality" %}{% assign variant_class = "meme-art--big-reality" %}
+            {% when "receipts" %}{% assign variant_class = "meme-art--receipts" %}
+            {% when "conflicts" %}{% assign variant_class = "meme-art--conflicts" %}
+            {% when "snake-oil" %}{% assign variant_class = "meme-art--snake-oil" %}
+            {% when "read-less" %}{% assign variant_class = "meme-art--read-less" %}
+          {% endcase %}
+          <button class="meme-tile {{ layout_class }}" type="button" aria-label="{{ item.aria_label | escape }}" data-meme-title="{{ item.title | escape }}" data-meme-caption="{{ item.caption | escape }}" data-meme-image-alt="{{ item.image.alt | escape }}">
+            {% if item.image.path != empty %}
+              <span class="meme-uploaded-media" aria-hidden="true">
+                {% include image.html image=item.image decorative=true class_name="meme-uploaded-image" %}
+              </span>
+            {% else %}
+              <span class="meme-art {{ variant_class }}" aria-hidden="true">
+                {% if item.art.kicker %}<span class="meme-art-kicker">{{ item.art.kicker | escape }}</span>{% endif %}
+                <span class="meme-art-text">{{ item.art.headline | escape | newline_to_br }}</span>
+                {% if item.art.accent %}<span class="meme-art-accent">{{ item.art.accent | escape | newline_to_br }}</span>{% endif %}
+                {% if item.art.stamp %}<span class="meme-art-stamp">{{ item.art.stamp | escape }}</span>{% endif %}
+              </span>
+            {% endif %}
+            <span class="meme-tile-label">{{ memes.page.tile_action_label }}</span>
+          </button>
+        {% endunless %}
+      {% endfor %}
+    </section>
+  </main>
+
+  <dialog class="meme-dialog" id="meme-dialog" aria-labelledby="meme-dialog-title" aria-describedby="meme-dialog-description meme-dialog-status">
+    <div class="meme-dialog-shell">
+      <header class="meme-dialog-header">
+        <div>
+          <h2 id="meme-dialog-title">{{ memes.page.dialog_title }}</h2>
+        </div>
+        <button class="dialog-close" type="button" data-dialog-close>{{ memes.page.dialog_close_label }}</button>
+      </header>
+      <div class="meme-display" id="meme-display"></div>
+      <p class="meme-dialog-description" id="meme-dialog-description"></p>
+      <div class="meme-dialog-footer">
+        <p class="meme-dialog-status" id="meme-dialog-status" aria-live="polite"></p>
+        <div class="meme-dialog-controls" aria-label="{{ memes.page.dialog_navigation_label }}">
+          <button class="dialog-control" type="button" data-meme-prev>{{ memes.page.dialog_previous_label }}</button>
+          <button class="dialog-control" type="button" data-meme-next>{{ memes.page.dialog_next_label }}</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  {% include footer.html current="memes" %}
+  <script src="{{ "/main.js" | relative_url }}"></script>
+</body>
+</html>

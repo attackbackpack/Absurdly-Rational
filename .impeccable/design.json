@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-15T19:02:26-05:00",
+  "title": "Design System: Absurdly Rational",
+  "extensions": {
+    "colorMeta": {
+      "background": {"role":"neutral","displayName":"Deep Night","canonical":"#07080a","tonalRamp":["#07080a","#0c0e12","#12151b","#1a1e26","#29303b","#3d4755","#657181","#aab3bf"]},
+      "surface": {"role":"neutral","displayName":"Ink Surface","canonical":"#101218","tonalRamp":["#0a0b0f","#101218","#171a22","#20242e","#2d3440","#434c5a","#687382","#b0b9c5"]},
+      "surface-strong": {"role":"neutral","displayName":"Raised Ink","canonical":"#151821","tonalRamp":["#0c0d12","#151821","#1d212b","#282d38","#383f4c","#505967","#737e8d","#bac2cc"]},
+      "text": {"role":"neutral","displayName":"Paper White","canonical":"#f4f6f8","tonalRamp":["#101214","#1c1f22","#2b2f34","#3e444b","#59616a","#77808a","#a9b0b7","#f4f6f8"]},
+      "muted": {"role":"neutral","displayName":"Blue Gray","canonical":"#aab3bf","tonalRamp":["#15181d","#23272e","#353b44","#4b535e","#666f7b","#818b98","#aab3bf","#d7dce2"]},
+      "faint": {"role":"neutral","displayName":"Faint Slate","canonical":"#7c8694","tonalRamp":["#101318","#1e2329","#30363e","#444c56","#5c6672","#7c8694","#aeb6c0","#dfe3e7"]},
+      "violet": {"role":"primary","displayName":"Signal Violet","canonical":"#c7aeff","tonalRamp":["#211b31","#372c51","#514071","#6e5594","#8d70b8","#a98ad7","#bda2ef","#c7aeff"]},
+      "blue": {"role":"secondary","displayName":"Signal Blue","canonical":"#7f9cff","tonalRamp":["#111a38","#1d2a56","#2d3e78","#405696","#5871b8","#6f89dc","#7f9cff","#b7c6ff"]},
+      "teal": {"role":"tertiary","displayName":"Signal Teal","canonical":"#6ee0cd","tonalRamp":["#102b2b","#164640","#21635a","#2e8073","#429e8f","#58bfaa","#6ee0cd","#b5f3e7"]},
+      "line": {"role":"neutral","displayName":"Quiet Hairline","canonical":"rgba(244, 246, 248, 0.13)","tonalRamp":["rgba(244,246,248,0.05)","rgba(244,246,248,0.08)","rgba(244,246,248,0.10)","rgba(244,246,248,0.13)","rgba(244,246,248,0.18)","rgba(244,246,248,0.24)","rgba(244,246,248,0.32)","rgba(244,246,248,0.42)"]},
+      "line-strong": {"role":"primary","displayName":"Signal Hairline","canonical":"rgba(199, 174, 255, 0.42)","tonalRamp":["rgba(199,174,255,0.12)","rgba(199,174,255,0.18)","rgba(199,174,255,0.24)","rgba(199,174,255,0.32)","rgba(199,174,255,0.42)","rgba(199,174,255,0.52)","rgba(199,174,255,0.64)","rgba(199,174,255,0.78)"]}
+    },
+    "typographyMeta": {
+      "display": {"displayName":"Display","purpose":"Major hero and page titles; direct and compressed."},
+      "body": {"displayName":"Body","purpose":"Readable descriptions and explanatory copy in Inter."},
+      "metadata": {"displayName":"Signal Metadata","purpose":"Compact source, format, and status labels in DM Mono."}
+    },
+    "shadows": [
+      {"name":"rooster-separation","value":"0 18px 28px rgba(0, 0, 0, 0.34)","purpose":"Separates the hero rooster mark from the signal field."}
+    ],
+    "motion": [
+      {"name":"signal-breathe","value":"7s cubic-bezier(0.16, 1, 0.3, 1) alternate","purpose":"Slow opacity and scale pulse for the hero orbit rings."},
+      {"name":"editorial-ease","value":"cubic-bezier(0.16, 1, 0.3, 1)","purpose":"Settled lift for surface hover transitions."}
+    ],
+    "breakpoints": [
+      {"name":"wide-stack","value":"900px"},
+      {"name":"mobile","value":"720px"},
+      {"name":"compact","value":"480px"}
+    ]
+  },
+  "components": [
+    {
+      "name":"Active Navigation Link",
+      "kind":"nav",
+      "refersTo":"nav-link-active",
+      "description":"The inverse pill that identifies the current route in the fixed navigation.",
+      "html":"<a class=\"ds-nav-link\" href=\"#\" aria-current=\"page\">Readings</a>",
+      "css":".ds-nav-link { display: inline-flex; min-height: 40px; align-items: center; padding: 9px 13px; border-radius: 999px; color: var(--bg); background: var(--text); font: 600 0.84rem/normal Inter, system-ui, sans-serif; text-decoration: none; transition: color 180ms ease, background 180ms ease; } .ds-nav-link:hover { color: var(--text); background: rgba(244, 246, 248, 0.07); } .ds-nav-link:focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; }"
+    },
+    {
+      "name":"Light Action Button",
+      "kind":"button",
+      "refersTo":"button-light",
+      "description":"The primary pill action used when a visitor should move into a format.",
+      "html":"<a class=\"ds-button-light\" href=\"#\">Choose your format<span class=\"ds-arrow\" aria-hidden=\"true\"></span></a>",
+      "css":".ds-button-light { display: inline-flex; min-height: 48px; align-items: center; gap: 11px; width: fit-content; padding: 13px 21px; border: 1px solid transparent; border-radius: 999px; color: var(--bg); background: var(--text); font: 650 1rem/normal Inter, system-ui, sans-serif; text-decoration: none; transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease; } .ds-button-light:hover { background: var(--violet); transform: translateY(-2px); } .ds-button-light:focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; } .ds-arrow { position: relative; display: inline-block; width: 18px; height: 12px; } .ds-arrow::before, .ds-arrow::after { position: absolute; content: \"\"; } .ds-arrow::before { top: 5px; left: 0; width: 16px; height: 1.5px; background: currentColor; } .ds-arrow::after { top: 2px; right: 0; width: 7px; height: 7px; border-top: 1.5px solid currentColor; border-right: 1.5px solid currentColor; transform: rotate(45deg); }"
+    },
+    {
+      "name":"Outline Action Button",
+      "kind":"button",
+      "refersTo":"button-outline",
+      "description":"A restrained secondary pill action for contact and supporting destinations.",
+      "html":"<a class=\"ds-button-outline\" href=\"#\">Contact Casey Husser, MD<span class=\"ds-arrow\" aria-hidden=\"true\"></span></a>",
+      "css":".ds-button-outline { display: inline-flex; min-height: 48px; align-items: center; gap: 11px; width: fit-content; padding: 13px 21px; border: 1px solid rgba(244, 246, 248, 0.34); border-radius: 999px; color: var(--text); background: transparent; font: 650 1rem/normal Inter, system-ui, sans-serif; text-decoration: none; transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease, background 180ms ease; } .ds-button-outline:hover { border-color: var(--violet); background: rgba(199, 174, 255, 0.09); transform: translateY(-2px); } .ds-button-outline:focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; }"
+    },
+    {
+      "name":"Editorial Feature Surface",
+      "kind":"card",
+      "refersTo":"editorial-surface",
+      "description":"A bordered feature surface that pairs geometric art with an editorial copy block.",
+      "html":"<a class=\"ds-feature-surface\" href=\"#\"><span class=\"ds-feature-art\" aria-hidden=\"true\"></span><span class=\"ds-feature-copy\"><span class=\"ds-metadata\">EVIDENCE-BASED MEDICINE</span><strong>Evidence vs. Hype</strong><span>Read on Substack</span></span></a>",
+      "css":".ds-feature-surface { display: grid; grid-template-columns: minmax(14rem, 0.92fr) minmax(0, 1.08fr); min-height: 31rem; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; color: var(--text); background: transparent; text-decoration: none; transition: border-color 220ms ease, transform 300ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-feature-surface:hover { border-color: var(--line-strong); transform: translateY(-5px); } .ds-feature-surface:focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; } .ds-feature-art { min-height: 21rem; background: var(--surface); background-image: linear-gradient(90deg, transparent 49.5%, rgba(199, 174, 255, 0.2) 50%, transparent 50.5%), linear-gradient(0deg, transparent 49.5%, rgba(199, 174, 255, 0.2) 50%, transparent 50.5%); } .ds-feature-copy { display: flex; flex-direction: column; justify-content: center; gap: 19px; padding: 48px; } .ds-feature-copy strong { font: 620 clamp(2rem, 5vw, 4.8rem)/1.05 Inter, system-ui, sans-serif; letter-spacing: -0.035em; } .ds-feature-copy > span:last-child { color: var(--violet); font: 400 0.78rem/1.5 \"DM Mono\", monospace; } .ds-metadata { color: var(--violet); font: 400 0.72rem/1.5 \"DM Mono\", monospace; letter-spacing: 0.055em; text-transform: uppercase; }"
+    },
+    {
+      "name":"Meme Tile",
+      "kind":"card",
+      "refersTo":"meme-tile",
+      "description":"An authored geometric tile in the dense meme wall, with a low-friction open state.",
+      "html":"<button class=\"ds-meme-tile\" type=\"button\"><span class=\"ds-meme-art\"><span class=\"ds-meme-kicker\">THE METHOD</span><strong>Ridicule<br>with receipts.</strong><span class=\"ds-meme-accent\">CITED</span></span><span class=\"ds-tile-label\">Open meme</span></button>",
+      "css":".ds-meme-tile { position: relative; min-height: 24rem; overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 14px; color: var(--text); background: var(--surface); cursor: pointer; text-align: left; transition: border-color 220ms ease, transform 300ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-meme-tile:hover { border-color: var(--line-strong); transform: translateY(-4px); } .ds-meme-tile:focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; } .ds-meme-art { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 32px; background: #0e1418; } .ds-meme-kicker, .ds-meme-accent { font: 400 0.78rem/1.45 \"DM Mono\", monospace; letter-spacing: 0.06em; } .ds-meme-kicker { color: var(--violet); } .ds-meme-accent { color: var(--teal); } .ds-meme-art strong { font: 650 clamp(1.6rem, 3.2vw, 2.8rem)/0.95 Inter, system-ui, sans-serif; letter-spacing: -0.04em; } .ds-tile-label { position: absolute; right: 14px; bottom: 14px; padding: 7px 10px; border-radius: 999px; color: var(--muted); background: rgba(7, 8, 10, 0.82); font: 600 0.72rem/normal Inter, system-ui, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar":"Editorial Signal Board",
+    "overview":"The shipped system treats Absurdly Rational as a concise signal board: a near-black field, a rooster mark, and restrained signal accents make the editorial voice feel authored without becoming institutional. Depth comes from tonal layering, thin lines, and geometric marks rather than decorative glass or invented imagery.\n\nInter carries display and reading text; DM Mono marks compact metadata and source-like labels. Surfaces are gently curved, controls are pills, and each format can keep its own rhythm while sharing one visual grammar. Motion is limited to a breathing signal pulse and responsive state transitions, with a reduced-motion fallback.",
+    "keyCharacteristics":["Near-black ground with sparse violet, blue, and teal signals.","Crisp geometric authored treatments paired with the rooster mark.","Asymmetric editorial composition instead of a same-size card grid.","Tonal and line-based depth with one signal-pulse motion idea."],
+    "rules":[
+      {"name":"The Signal Rarity Rule","body":"Keep violet, blue, and teal sparse; their rarity is what makes a signal legible.","section":"colors"},
+      {"name":"The Tight Headline Rule","body":"Heavy headlines may use tight leading and negative tracking; supporting copy stays muted and open.","section":"typography"},
+      {"name":"The Flat by Default Rule","body":"Do not add card shadows or glass panels; use tone, line, and authored geometry to establish hierarchy.","section":"elevation"}
+    ],
+    "dos":["Keep the near-black ground and rooster mark as the persistent identity layer.","Use violet, blue, and teal as sparse signals against cool neutrals.","Preserve 14px surfaces, pill controls, thin borders, and the teal focus ring.","Use crisp geometric treatments when a surface needs authored visual interest.","Honor the signal pulse and reduced-motion fallback."],
+    "donts":["Don't introduce decorative glass or ambient card shadows.","Don't flatten every surface into a generic same-size card grid.","Don't add above-heading kickers as a new global pattern.","Don't invent imagery or replace the rooster mark with a generic icon.","Don't use saturated accent fills so heavily that the signals stop signaling."]
+  }
+}

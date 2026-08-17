@@ -1,0 +1,447 @@
+{
+  "page": {
+    "seo": {
+      "title": "Selected Readings | Evidence-based medicine and health policy",
+      "description": "Selected Absurdly Rational readings on evidence-based medicine, health misinformation, healthcare policy, clinical decision-making, and hospital life.",
+      "og_title": "Selected Readings | Evidence-based medicine and health policy",
+      "og_description": "Four routes through evidence-based medicine, health misinformation, healthcare policy, critical thinking, and hospital life.",
+      "twitter_description": "Four routes through evidence-based medicine, health misinformation, healthcare policy, critical thinking, and hospital life."
+    },
+    "title": "Readings, sorted by obsession.",
+    "lede": "Choose a subject, preview the essays here, then follow any post to its original home on Substack.",
+    "back_label": "All reading topics",
+    "topic_switcher_label": "Reading topics",
+    "post_cta_label": "Read on Substack",
+    "topic_index_aria": "Reading topics",
+    "archive_url": "https://absurdlyrational.substack.com",
+    "source_note": {
+      "index_title": "Preview here. Read at the source.",
+      "index_description": "Every topic page includes Casey’s real post artwork, title, description, and publication date. Opening an essay takes you to the original Substack post.",
+      "topic_title": "The previews live here. The essays live there.",
+      "topic_description": "Each card opens Casey’s original Substack post in a new tab.",
+      "archive_label": "Browse the full Substack archive",
+      "topic_archive_label": "Full Substack archive"
+    }
+  },
+  "topics": [
+    {
+      "slug": "evidence",
+      "order": 1,
+      "class_name": "evidence",
+      "path": "readings-evidence.html",
+      "title": "Evidence vs. Hype",
+      "short_title": "Evidence vs. Hype",
+      "description": "Distilling facts from the seductive dung heap of pseudoscience, while letting you know where the rest will take you.",
+      "index_label": "Evidence-based medicine",
+      "aria_label": "Evidence versus hype essays",
+      "seo": {
+        "title": "Evidence vs. Hype | Absurdly Rational readings",
+        "description": "Casey Husser's Absurdly Rational essays on evidence-based medicine, pseudoscience, medical misinformation, and alternative medicine.",
+        "og_title": "Evidence vs. Hype | Absurdly Rational readings",
+        "og_description": "Essays on evidence-based medicine, pseudoscience, medical misinformation, and alternative medicine.",
+        "twitter_description": "Essays on evidence-based medicine, pseudoscience, medical misinformation, and alternative medicine."
+      }
+    },
+    {
+      "slug": "policy",
+      "order": 2,
+      "class_name": "policy",
+      "path": "readings-policy.html",
+      "title": "When Policy Meets Practice",
+      "short_title": "Policy Meets Practice",
+      "description": "Hey, I don’t want to be political, but politics can literally poison you.",
+      "index_label": "Policy / institutions",
+      "aria_label": "Policy and practice essays",
+      "seo": {
+        "title": "When Policy Meets Practice | Absurdly Rational readings",
+        "description": "Casey Husser's Absurdly Rational essays on healthcare policy, public institutions, corporate medicine, and the consequences of political decisions.",
+        "og_title": "When Policy Meets Practice | Absurdly Rational readings",
+        "og_description": "Essays on healthcare policy, public institutions, corporate medicine, and political consequences.",
+        "twitter_description": "Essays on healthcare policy, public institutions, corporate medicine, and political consequences."
+      }
+    },
+    {
+      "slug": "thinking",
+      "order": 3,
+      "class_name": "thinking",
+      "path": "readings-thinking.html",
+      "title": "Critical Thinking & Decision-Making",
+      "short_title": "Critical Thinking",
+      "description": "No really… not the uncited clichés, just the actual things.",
+      "index_label": "Judgment / expertise",
+      "aria_label": "Critical thinking and decision-making essays",
+      "seo": {
+        "title": "Critical Thinking & Decision-Making | Absurdly Rational readings",
+        "description": "Casey Husser's Absurdly Rational essays on critical thinking, expertise, artificial intelligence, disinformation, and human decision-making.",
+        "og_title": "Critical Thinking & Decision-Making | Absurdly Rational readings",
+        "og_description": "Essays on expertise, artificial intelligence, disinformation, and human judgment.",
+        "twitter_description": "Essays on expertise, artificial intelligence, disinformation, and human judgment."
+      }
+    },
+    {
+      "slug": "hospital",
+      "order": 4,
+      "class_name": "hospital",
+      "path": "readings-hospital.html",
+      "title": "Hospital Life & Other Philosophical Observations",
+      "short_title": "Hospital Life",
+      "description": "It’s never as clean as <em>The Pitt</em>, nor as sexy as <em>Grey’s Anatomy</em>. But it’s funny.",
+      "index_label": "Medicine / mortality",
+      "aria_label": "Hospital life and philosophy essays",
+      "seo": {
+        "title": "Hospital Life & Philosophy | Absurdly Rational readings",
+        "description": "Casey Husser's Absurdly Rational essays on hospital life, medical decision-making, mortality, and the philosophy hiding inside clinical practice.",
+        "og_title": "Hospital Life & Philosophy | Absurdly Rational readings",
+        "og_description": "Essays on hospital life, medical decision-making, mortality, and clinical practice.",
+        "twitter_description": "Essays on hospital life, medical decision-making, mortality, and clinical practice."
+      }
+    }
+  ],
+  "posts": [
+    {
+      "category": "evidence",
+      "date": "2026-07-13",
+      "title": "Peptides and hallucinogens are America’s new steak and mushrooms!",
+      "subtitle": "Part 1: The united, uncertain state of experimental peptides",
+      "url": "https://absurdlyrational.substack.com/p/peptides-and-hallucinogens-are-americas",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!qCkA!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F96b450e7-cec3-41f4-a0f0-6c83a5aa242a_1408x768.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "thinking",
+      "date": "2026-06-22",
+      "title": "A good lawyer knows the law, a great lawyer knows the judge…",
+      "subtitle": "And an AI lawyer should know it’s the judge, jury, and Terminator.",
+      "url": "https://absurdlyrational.substack.com/p/a-good-lawyer-knows-the-law-a-great",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!pgyD!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fcd7cee23-2d14-49dd-9a85-548ec60757b7_1000x983.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "evidence",
+      "date": "2026-06-10",
+      "title": "What Medicine got Wrong About Alternative Medicine",
+      "subtitle": "Venomous thoughts on tolerance and time.",
+      "url": "https://absurdlyrational.substack.com/p/what-medicine-got-wrong-about-alternative",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!feLW!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ffc335722-d159-4167-940e-a9b5619edeb4_2052x2063.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "hospital",
+      "date": "2026-05-04",
+      "title": "Do Not Resuscitate:",
+      "subtitle": "The vast chasm between expectation and reality",
+      "url": "https://absurdlyrational.substack.com/p/do-not-resuscitate",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!7fHs!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F678d323b-0379-45a0-a9b8-269dda9fbb62_1024x1024.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "thinking",
+      "date": "2026-04-21",
+      "title": "War, AI, and the future of human decision-making",
+      "subtitle": "Wait… is this the wrong Substack account?",
+      "url": "https://absurdlyrational.substack.com/p/war-ai-and-the-future-of-human-decision",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!m2i1!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F60d7db98-7e38-4c54-adfa-3599cd479ecf_1536x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2026-04-12",
+      "title": "CDC Cuts Unlock a New Fear: Transplant Rabies.",
+      "subtitle": "Dude… where’s my corneas?",
+      "url": "https://absurdlyrational.substack.com/p/cdc-cuts-unlock-a-new-fear-transplant",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!ArbH!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc6fb6911-2f4c-4686-9f55-23d5837c17dd_935x742.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "evidence",
+      "date": "2026-03-23",
+      "title": "The Sacred Geometry of Ivermectin",
+      "subtitle": "A review of miracles that a wonder-drug CANNOT accomplish",
+      "url": "https://absurdlyrational.substack.com/p/the-sacred-geometry-of-ivermectin",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!ibiO!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F65bb7027-ac6d-4924-bf36-94b2368a05fd_1536x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2026-03-04",
+      "title": "Casey Means and the Deathly Kakistocracy",
+      "subtitle": "The Surgeon General cannot be a failed physician",
+      "url": "https://absurdlyrational.substack.com/p/casey-means-and-the-deathly-kakistocracy",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!hJZl!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb590f742-850b-4113-8cda-5bf94e2c0f76_1536x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "hospital",
+      "date": "2026-02-09",
+      "title": "Detox Detonated my Aorta",
+      "subtitle": "The holistic, all-natural, one-step plan for emergent heart surgery",
+      "url": "https://absurdlyrational.substack.com/p/detox-detonated-my-aorta",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!6aN3!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F0a043032-2205-43c4-b563-150fc84c739e_1536x953.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "hospital",
+      "date": "2026-01-27",
+      "title": "The Smartest Guy in the Room is First to the Grave",
+      "subtitle": "Why geniuses die like idiots",
+      "url": "https://absurdlyrational.substack.com/p/the-smartest-guy-in-the-room-is-first",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!JN1y!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbdecf8ad-c75e-4794-a3bc-02045a67384c_1536x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2026-01-06",
+      "title": "Vinay Prasad Strikes Trump’s Peace Prize Chances Harder than Trump Struck Venezuela",
+      "subtitle": "While Murado will show up, that prize sure won’t.",
+      "url": "https://absurdlyrational.substack.com/p/vinay-prasad-strikes-trumps-peace",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!aHNR!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F409babe2-7bde-46ed-894b-7c1e3527e3cd_1536x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2025-11-14",
+      "title": "Peanuts and PBM’s can both help you to die of anaphylaxis.",
+      "subtitle": "On allergies and avarice",
+      "url": "https://absurdlyrational.substack.com/p/peanuts-and-pbms-can-both-help-you",
+      "visible": true,
+      "image": {
+        "path": "https://substack-post-media.s3.amazonaws.com/public/images/88061ac2-7fc1-403e-bd18-79221102a12d_1542x1268.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "thinking",
+      "date": "2025-10-18",
+      "title": "How Russian Medical Disinformation Captured American Power.",
+      "subtitle": "The best propaganda bites the hand that writes it.",
+      "url": "https://absurdlyrational.substack.com/p/how-russian-medical-disinformation",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!ocnx!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F256b0d51-bc23-46c8-abba-41e5016c1f0e_1150x825.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "thinking",
+      "date": "2025-09-01",
+      "title": "Slow and steady cures disease -but loses the hearts and minds of America",
+      "subtitle": "The state of the race between Science and Disinformation",
+      "url": "https://absurdlyrational.substack.com/p/slow-and-steady-cures-disease-but",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!1Xu8!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fd31510f5-443f-49bd-9c32-c09c30497448_1024x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "evidence",
+      "date": "2025-08-24",
+      "title": "The German grifter who proved RFK Jr. wrong.",
+      "subtitle": "Sometimes… two wrongs make a right!",
+      "url": "https://absurdlyrational.substack.com/p/the-german-grifter-who-proved-rfk",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!fv8a!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe6d0dfe5-a036-46ad-89eb-ea12142cacf0_1381x1520.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "hospital",
+      "date": "2025-08-05",
+      "title": "Nature wants you dead",
+      "subtitle": "The only ancient wisdom that modern charlatans do NOT want you to know",
+      "url": "https://absurdlyrational.substack.com/p/nature-wants-you-dead",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!CPjO!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F39c3b9f8-5e4b-4a58-9589-6a684597c68f_1060x915.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2025-07-18",
+      "title": "Don’t touch my Medicare!",
+      "subtitle": "How the BBB will touch your Medicare in several ways",
+      "url": "https://absurdlyrational.substack.com/p/dont-touch-my-medicare-882",
+      "visible": true,
+      "image": {
+        "path": "https://substack-video.s3.amazonaws.com/video_upload/post/168660690/19bf0cf0-d165-46b1-9ab9-2f992801fc4e/transcoded-1752862117.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "evidence",
+      "date": "2025-07-13",
+      "title": "Worst US Measles Outbreak of the Century…",
+      "subtitle": "RFK Jr.’s solution: “Stop trusting experts.”",
+      "url": "https://absurdlyrational.substack.com/p/worst-us-measles-outbreak-of-the",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!ZWyb!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ff02617fc-6d53-4747-9cbf-e926bbf1b332_1206x1197.jpeg",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2025-07-06",
+      "title": "Science denialism is steady, deadly business in Texas.",
+      "subtitle": "A short and sad take on the long road ahead",
+      "url": "https://absurdlyrational.substack.com/p/science-denialism-is-steady-deadly",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!A-aR!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F0cc8efa1-7dce-4c87-addd-c988e3885e89_1024x1536.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2025-07-04",
+      "title": "Don’t touch my Medicare!",
+      "subtitle": "The politics of self-interest explode on Independence Day",
+      "url": "https://absurdlyrational.substack.com/p/dont-touch-my-medicare",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!P8lk!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdaa7d17e-e345-49c5-947f-83085ddec91f_1416x1422.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2025-05-31",
+      "title": "An Open Letter to the Shareholders of UnitedHealth Group",
+      "subtitle": "In the wake of Andrew Witty stepping down from heading UnitedHealth Group, you have elected his predecessor Stephen Hemsley to be your CEO -again. And you’re being asked to pay him $60M in stock options to do it. Bold move.",
+      "url": "https://absurdlyrational.substack.com/p/an-open-letter-to-the-shareholders",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!108s!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F274bde70-261a-475a-81c3-31e3a7d6ffd5_1024x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "policy",
+      "date": "2025-05-26",
+      "title": "F*ck Harvard",
+      "subtitle": "And other Aphorisms on National Suicide",
+      "url": "https://absurdlyrational.substack.com/p/fck-harvard",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!27US!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fabd734a2-212b-4fc9-a20a-f0904b5700b2_1024x1536.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    },
+    {
+      "category": "thinking",
+      "date": "2025-05-14",
+      "title": "Is Jerome Powell the next Anthony Fauci?",
+      "subtitle": "Wait… what do those two guys have in common aside from hair color and decades of bipartisan public service?",
+      "url": "https://absurdlyrational.substack.com/p/is-jerome-powell-the-next-anthony",
+      "visible": true,
+      "image": {
+        "path": "https://substackcdn.com/image/fetch/$s_!YuGs!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa1f15cf7-c6d2-4978-94df-7edf7690cc6d_1024x1024.png",
+        "alt": "",
+        "decorative": true,
+        "fit": "cover",
+        "focus": "center"
+      }
+    }
+  ]
+}

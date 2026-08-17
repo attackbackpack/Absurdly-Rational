@@ -1,0 +1,73 @@
+{% assign page_seo = include.seo %}
+{% assign canonical_path = include.canonical_path | default: "/" %}
+{% assign canonical_url = site.url | append: canonical_path %}
+{% assign og_title = page_seo.og_title | default: page_seo.title %}
+{% assign og_description = page_seo.og_description | default: page_seo.description %}
+{% assign twitter_description = page_seo.twitter_description | default: page_seo.description %}
+{% assign og_image_path = include.og_image | default: site.data.site.brand_image.path %}
+{% assign og_image_alt = include.og_image_alt | default: site.data.site.brand_image.alt %}
+{% if og_image_path contains "://" %}
+  {% assign og_image_url = og_image_path %}
+{% else %}
+  {% assign og_image_path_clean = og_image_path | remove_first: "/" %}
+  {% assign og_image_url = site.url | append: "/" | append: og_image_path_clean %}
+{% endif %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_seo.title | escape }}</title>
+  <meta name="description" content="{{ page_seo.description | escape }}">
+  <meta name="author" content="{{ site.data.site.author.name | escape }}">
+  <meta name="theme-color" content="{{ site.data.site.theme_color }}">
+  <link rel="canonical" href="{{ canonical_url }}">
+  <link rel="icon" href="{{ site.data.site.brand_image.path | relative_url }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  {% if include.preconnect_media %}
+  <link rel="preconnect" href="https://substackcdn.com">
+  <link rel="preconnect" href="https://substack-post-media.s3.amazonaws.com">
+  {% endif %}
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ "/styles.css" | relative_url }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ site.data.site.name | escape }}">
+  <meta property="og:url" content="{{ canonical_url }}">
+  <meta property="og:title" content="{{ og_title | escape }}">
+  <meta property="og:description" content="{{ og_description | escape }}">
+  <meta property="og:image" content="{{ og_image_url }}">
+  <meta property="og:image:alt" content="{{ og_image_alt | escape }}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{ og_title | escape }}">
+  <meta name="twitter:description" content="{{ twitter_description | escape }}">
+  <meta name="twitter:image" content="{{ og_image_url }}">
+  {% if include.schema_type %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": {{ include.schema_type | jsonify }},
+    "name": {{ include.schema_name | default: page_seo.title | jsonify }},
+    "url": {{ canonical_url | jsonify }},
+    "description": {{ include.schema_description | default: page_seo.description | jsonify }},
+    {% if include.schema_type == "WebSite" %}
+    "publisher": {
+      "@type": "Person",
+      "name": {{ site.data.site.author.name | jsonify }},
+      "url": {{ site.data.site.author.linkedin | jsonify }}
+    }
+    {% else %}
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": {{ site.data.site.name | jsonify }},
+      "url": {{ site.url | append: "/" | jsonify }}
+    },
+    "author": {
+      "@type": "Person",
+      "name": {{ site.data.site.author.name | jsonify }}
+    }
+    {% endif %}
+  }
+  </script>
+  {% endif %}
+</head>

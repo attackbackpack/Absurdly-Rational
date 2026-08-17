@@ -1,0 +1,24 @@
+{% assign image = include.image %}
+{% assign fit_class = "image-fit-cover" %}
+{% case image.fit %}
+  {% when "contain" %}{% assign fit_class = "image-fit-contain" %}
+  {% when "cover" %}{% assign fit_class = "image-fit-cover" %}
+{% endcase %}
+{% assign focus_class = "image-focus-center" %}
+{% case image.focus %}
+  {% when "center" %}{% assign focus_class = "image-focus-center" %}
+  {% when "top" %}{% assign focus_class = "image-focus-top" %}
+  {% when "bottom" %}{% assign focus_class = "image-focus-bottom" %}
+  {% when "left" %}{% assign focus_class = "image-focus-left" %}
+  {% when "right" %}{% assign focus_class = "image-focus-right" %}
+  {% when "top-left" %}{% assign focus_class = "image-focus-top-left" %}
+  {% when "top-right" %}{% assign focus_class = "image-focus-top-right" %}
+  {% when "bottom-left" %}{% assign focus_class = "image-focus-bottom-left" %}
+  {% when "bottom-right" %}{% assign focus_class = "image-focus-bottom-right" %}
+{% endcase %}
+{% if image.path contains "://" %}
+  {% assign image_src = image.path %}
+{% else %}
+  {% assign image_src = image.path | relative_url %}
+{% endif %}
+<img class="image-object{% if include.class_name %} {{ include.class_name }}{% endif %} {{ fit_class }} {{ focus_class }}" src="{{ image_src | escape }}" alt="{% if include.decorative or image.decorative %}{% else %}{{ image.alt | escape }}{% endif %}"{% if include.loading %} loading="{{ include.loading }}"{% else %} loading="lazy"{% endif %} decoding="async"{% if include.fetchpriority %} fetchpriority="{{ include.fetchpriority }}"{% endif %}>

@@ -1,0 +1,46 @@
+name: Optimize uploaded images
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Pages CMS action payload
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the current Pages CMS branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install image optimizer
+        run: npm ci
+      - name: Optimize uploaded images and update references
+        env:
+          PAGES_CMS_PAYLOAD: ${{ inputs.payload }}
+        run: npm run optimize:images -- --convert-webp
+      - name: Validate optimized content
+        run: npm run validate:content
+      - name: Commit only when optimization changed files
+        shell: bash
+        run: |
+          if [ -z "$(git status --short -- assets/uploads _data)" ]; then
+            echo "No image optimization changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/uploads _data
+          git commit -m "chore(media): optimize uploaded images [skip pages-cms image optimization]"
+          git push

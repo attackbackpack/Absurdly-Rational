@@ -1,0 +1,91 @@
+---
+permalink: /podcasts.html
+---
+{% assign podcasts = site.data.podcasts.page %}
+{% include head.html seo=podcasts.seo canonical_path="/podcasts.html" schema_type="CollectionPage" schema_name="Podcasts" schema_description=podcasts.seo.description %}
+<body class="page-podcasts" data-page="podcasts">
+  {% include field.html late=true %}
+  {% include nav.html current="podcasts" %}
+
+  <main class="page-shell">
+    <header class="page-intro">
+      <h1>{{ podcasts.title }}</h1>
+      <p class="page-lede">{{ podcasts.lede }}</p>
+    </header>
+
+    <section class="podcast-show" aria-labelledby="show-title">
+      <div class="podcast-visual{% if podcasts.show.image.path != empty %} podcast-visual--image{% endif %}"{% if podcasts.show.image.path == empty %} aria-hidden="true"{% endif %}>
+        {% if podcasts.show.image.path != empty %}
+          {% include image.html image=podcasts.show.image class_name="podcast-image-object" %}
+        {% else %}
+          <span class="podcast-disc"></span>
+          <span class="podcast-wave podcast-wave--one"></span>
+          <span class="podcast-wave podcast-wave--two"></span>
+          <span class="podcast-wave podcast-wave--three"></span>
+          <span class="podcast-label">{{ podcasts.show.label }}</span>
+        {% endif %}
+      </div>
+      <div class="podcast-show-copy">
+        <h2 id="show-title">{{ podcasts.show.title }}</h2>
+        <p>{{ podcasts.show.description }}</p>
+        <span class="reading-meta">{{ podcasts.show.meta }}</span>
+        <a class="button button--light" href="{{ podcasts.show.url }}"{% if podcasts.show.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ podcasts.show.button_label }}<span class="link-arrow" aria-hidden="true"></span></a>
+      </div>
+    </section>
+
+    <section class="guest-section" aria-labelledby="guest-title">
+      <div class="section-heading section-heading--compact">
+        <h2 id="guest-title">{{ podcasts.guests_heading }}</h2>
+        <p>{{ podcasts.guests_description }}</p>
+      </div>
+      <div class="guest-grid">
+        {% for guest in site.data.podcasts.guests %}
+          {% assign guest_class = "architect" %}
+          {% case guest.class_name %}
+            {% when "stanford" %}{% assign guest_class = "stanford" %}
+            {% when "architect" %}{% assign guest_class = "architect" %}
+          {% endcase %}
+        {% unless guest.visible == false %}
+        <article class="guest-card guest-card--{{ guest_class }}">
+          <div class="guest-art guest-art--{{ guest_class }}{% if guest.image.path != empty %} guest-art--image{% endif %}"{% if guest.image.path == empty %} aria-hidden="true"{% endif %}>
+            {% if guest.image.path != empty %}
+              {% include image.html image=guest.image class_name="guest-image-object" %}
+            {% elsif guest_class == "stanford" %}
+              <span>{{ guest.art_label }}</span>
+              <span class="guest-art-line guest-art-line--one"></span>
+              <span class="guest-art-line guest-art-line--two"></span>
+            {% else %}
+              <span class="architect-square architect-square--one"></span>
+              <span class="architect-square architect-square--two"></span>
+              <span class="architect-square architect-square--three"></span>
+            {% endif %}
+          </div>
+          <div class="guest-card-copy">
+            <h3>{{ guest.title }}</h3>
+            <p>{{ guest.description }}</p>
+            <span class="reading-meta">{{ guest.meta }}</span>
+            <div class="card-actions">
+              {% for link in guest.links %}
+              <a class="{% if link.arrow %}text-link{% else %}secondary-link{% endif %}" href="{{ link.url }}"{% if link.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ link.label }}{% if link.arrow %}<span class="link-arrow" aria-hidden="true"></span>{% endif %}</a>
+              {% endfor %}
+            </div>
+          </div>
+        </article>
+        {% endunless %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="podcast-invite" aria-labelledby="invite-title">
+      <div>
+        <h2 id="invite-title">{{ podcasts.invite.title }}</h2>
+        <p>{{ podcasts.invite.description }}</p>
+      </div>
+      <a class="button button--outline" href="{{ podcasts.invite.url }}"{% if podcasts.invite.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ podcasts.invite.button_label }}<span class="link-arrow" aria-hidden="true"></span></a>
+    </section>
+  </main>
+
+  {% include footer.html current="podcasts" %}
+  <script src="{{ "/main.js" | relative_url }}"></script>
+</body>
+</html>

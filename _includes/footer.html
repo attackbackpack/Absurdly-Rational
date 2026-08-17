@@ -1,0 +1,15 @@
+<footer class="site-footer">
+  <div class="footer-inner">
+    <a class="footer-brand" href="{{ "/index.html" | relative_url }}" aria-label="{{ site.data.site.name }} home">
+      <img src="{{ site.data.site.brand_image.path | relative_url }}" alt="">
+      <span>{{ site.data.site.name }}</span>
+    </a>
+    <p class="footer-note">{{ site.data.site.footer.note }}</p>
+    <nav class="footer-links" aria-label="Footer navigation">
+      {% for item in site.data.site.navigation %}
+      <a href="{{ item.url | relative_url }}"{% if include.current == item.key %} aria-current="page"{% endif %}>{{ item.label }}</a>
+      {% endfor %}
+      <a href="{{ site.data.site.author.linkedin }}" target="_blank" rel="noopener noreferrer">{{ site.data.site.footer.contact_label }}</a>
+    </nav>
+  </div>
+</footer>

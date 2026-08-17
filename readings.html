@@ -1,0 +1,53 @@
+---
+permalink: /readings.html
+---
+{% assign readings = site.data.readings %}
+{% include head.html seo=readings.page.seo canonical_path="/readings.html" schema_type="CollectionPage" schema_name="Selected Readings" schema_description=readings.page.seo.description %}
+<body class="page-readings" data-page="readings">
+  {% include field.html late=true %}
+  {% include nav.html current="readings" %}
+
+  <main class="page-shell">
+    <header class="page-intro">
+      <h1>{{ readings.page.title }}</h1>
+      <p class="page-lede">{{ readings.page.lede }}</p>
+    </header>
+
+    <section class="topic-index" aria-label="{{ readings.page.topic_index_aria }}">
+      {% assign topics = readings.topics | sort: "order" %}
+      {% for topic in topics %}
+        {% assign topic_posts = readings.posts | where: "category", topic.slug | where: "visible", true %}
+        {% assign topic_class = "evidence" %}
+        {% case topic.slug %}
+          {% when "evidence" %}{% assign topic_class = "evidence" %}
+          {% when "policy" %}{% assign topic_class = "policy" %}
+          {% when "thinking" %}{% assign topic_class = "thinking" %}
+          {% when "hospital" %}{% assign topic_class = "hospital" %}
+        {% endcase %}
+        <a class="topic-door topic-door--{{ topic_class }}" href="{{ topic.path | relative_url }}">
+          <span class="topic-door-signal" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="topic-door-copy">
+            <span class="topic-door-heading">
+              <h2>{{ topic.title }}</h2>
+              <span class="link-arrow" aria-hidden="true"></span>
+            </span>
+            <span class="topic-door-description">{{ topic.description }}</span>
+            <span class="topic-door-footer"><span>{{ topic_posts.size }} {% if topic_posts.size == 1 %}essay{% else %}essays{% endif %}</span><span>{{ topic.index_label }}</span></span>
+          </span>
+        </a>
+      {% endfor %}
+    </section>
+
+    <aside class="source-note">
+      <div>
+        <h2>{{ readings.page.source_note.index_title }}</h2>
+        <p>{{ readings.page.source_note.index_description }}</p>
+      </div>
+      <a class="text-link" href="{{ readings.page.archive_url }}" target="_blank" rel="noopener noreferrer">{{ readings.page.source_note.archive_label }}<span class="link-arrow" aria-hidden="true"></span></a>
+    </aside>
+  </main>
+
+  {% include footer.html current="readings" %}
+  <script src="{{ "/main.js" | relative_url }}"></script>
+</body>
+</html>
