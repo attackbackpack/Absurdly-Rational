@@ -4,7 +4,6 @@ const OVERLAY_STYLE = `
 [data-edit-image] { cursor: pointer; }
 [data-edit-image]:hover { outline: 2px dashed rgba(111,123,255,.9); }
 [data-edit][contenteditable="plaintext-only"] { outline: 2px solid rgba(111,123,255,1); background: rgba(111,123,255,.08); }
-.ar-editing-blocked { cursor: not-allowed !important; }
 `;
 
 export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
@@ -37,6 +36,21 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
     on(node, "paste", (event) => {
       event.preventDefault();
       const text = (event.clipboardData || frame.contentWindow.clipboardData).getData("text/plain");
+      doc.execCommand("insertText", false, text.replace(/\s+/g, " "));
+    });
+
+    // A native drop into a plaintext-only region is not covered by the
+    // plaintext-only spec (that text only governs paste), so it is not safe
+    // to assume every engine strips markup on drop. Intercept it the same
+    // way as paste: only ever insert text/plain.
+    on(node, "dragover", (event) => {
+      event.preventDefault();
+    });
+
+    on(node, "drop", (event) => {
+      event.preventDefault();
+      const text = event.dataTransfer && event.dataTransfer.getData("text/plain");
+      if (!text) return;
       doc.execCommand("insertText", false, text.replace(/\s+/g, " "));
     });
 
