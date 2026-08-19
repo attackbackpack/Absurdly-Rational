@@ -14,8 +14,9 @@ permalink: /podcasts.html
     </header>
 
     <section class="podcast-show" aria-labelledby="show-title">
-      <div class="podcast-visual{% if podcasts.show.image.path != empty %} podcast-visual--image{% endif %}"{% if podcasts.show.image.path == empty %} aria-hidden="true"{% endif %}>
-        {% if podcasts.show.image.path != empty %}
+      {% assign show_image_path = podcasts.show.image.path | default: "" %}
+      <div class="podcast-visual{% if show_image_path != empty %} podcast-visual--image{% endif %}"{% if show_image_path == empty %} aria-hidden="true"{% endif %}>
+        {% if show_image_path != empty %}
           {% include image.html image=podcasts.show.image class_name="podcast-image-object" %}
         {% else %}
           <span class="podcast-disc"></span>
@@ -47,8 +48,9 @@ permalink: /podcasts.html
           {% endcase %}
         {% unless guest.visible == false %}
         <article class="guest-card guest-card--{{ guest_class }}">
-          <div class="guest-art guest-art--{{ guest_class }}{% if guest.image.path != empty %} guest-art--image{% endif %}"{% if guest.image.path == empty %} aria-hidden="true"{% endif %}>
-            {% if guest.image.path != empty %}
+          {% assign guest_image_path = guest.image.path | default: "" %}
+          <div class="guest-art guest-art--{{ guest_class }}{% if guest_image_path != empty %} guest-art--image{% endif %}"{% if guest_image_path == empty %} aria-hidden="true"{% endif %}>
+            {% if guest_image_path != empty %}
               {% include image.html image=guest.image class_name="guest-image-object" %}
             {% elsif guest_class == "stanford" %}
               <span>{{ guest.art_label }}</span>

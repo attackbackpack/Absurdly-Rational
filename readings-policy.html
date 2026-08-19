@@ -30,8 +30,9 @@ topic: policy
       {% for post in topic_posts %}
       <article class="post-card{% if forloop.first %} post-card--lead{% endif %}">
         <a class="post-card-link" href="{{ post.url }}" target="_blank" rel="noopener noreferrer">
-          <span class="post-card-media{% if post.image.path == empty %} post-card-media--fallback{% endif %}">
-            {% if post.image.path != empty %}
+          {% assign post_image_path = post.image.path | default: "" %}
+          <span class="post-card-media{% if post_image_path == empty %} post-card-media--fallback{% endif %}">
+            {% if post_image_path != empty %}
               {% if forloop.first %}
                 {% include image.html image=post.image decorative=post.image.decorative loading="eager" fetchpriority="high" %}
               {% else %}

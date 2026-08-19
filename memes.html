@@ -39,7 +39,8 @@ permalink: /memes.html
             {% when "read-less" %}{% assign variant_class = "meme-art--read-less" %}
           {% endcase %}
           <button class="meme-tile {{ layout_class }}" type="button" aria-label="{{ item.aria_label | escape }}" data-meme-title="{{ item.title | escape }}" data-meme-caption="{{ item.caption | escape }}" data-meme-image-alt="{{ item.image.alt | escape }}">
-            {% if item.image.path != empty %}
+            {% assign meme_image_path = item.image.path | default: "" %}
+            {% if meme_image_path != empty %}
               <span class="meme-uploaded-media" aria-hidden="true">
                 {% include image.html image=item.image decorative=true class_name="meme-uploaded-image" %}
               </span>

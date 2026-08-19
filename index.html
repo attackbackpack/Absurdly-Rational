@@ -9,8 +9,9 @@ permalink: /index.html
 
   <main>
     <section class="home-hero" id="top">
-      <div class="home-signal{% if home.hero.image.path != empty %} home-signal--image{% endif %}"{% if home.hero.image.path == empty %} aria-hidden="true"{% endif %}>
-        {% if home.hero.image.path != empty %}
+      {% assign hero_image_path = home.hero.image.path | default: "" %}
+      <div class="home-signal{% if hero_image_path != empty %} home-signal--image{% endif %}"{% if hero_image_path == empty %} aria-hidden="true"{% endif %}>
+        {% if hero_image_path != empty %}
           <div class="home-hero-image image-frame image-frame--hero">
             {% include image.html image=home.hero.image class_name="hero-image-object" loading="eager" fetchpriority="high" %}
           </div>
@@ -45,8 +46,9 @@ permalink: /index.html
             {% when "memes" %}{% assign format_class = "memes" %}
           {% endcase %}
         <a class="format-door format-door--{{ format_class }}" href="{{ format.url | relative_url }}">
-          <span class="door-art door-art--{{ format_class }}{% if format.image.path != empty %} door-art--image{% endif %}" aria-hidden="true">
-            {% if format.image.path != empty %}
+          {% assign door_image_path = format.image.path | default: "" %}
+          <span class="door-art door-art--{{ format_class }}{% if door_image_path != empty %} door-art--image{% endif %}" aria-hidden="true">
+            {% if door_image_path != empty %}
               {% include image.html image=format.image decorative=true class_name="door-image-object" %}
             {% elsif format_class == "readings" %}
               <span></span><span></span><span></span>
