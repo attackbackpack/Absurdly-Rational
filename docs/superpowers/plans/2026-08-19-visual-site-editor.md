@@ -38,6 +38,7 @@ Two, both simplifications. Carry them forward.
 
 | Path | Responsibility |
 |---|---|
+| `editor/package.json` | `{"type": "module"}` — scopes ESM to `editor/` so Node can load these `.js` files. |
 | `editor/lib/paths.js` | Parse `file:path` specs; get/set values in JSON by path. Shared browser + Node. Pure. |
 | `editor/lib/paths.test.js` | Unit tests for the above. |
 | `editor/lib/imagefit.js` | `fitClass()` / `focusClass()` mirroring `_includes/image.html`. Pure. |
@@ -75,8 +76,10 @@ Two, both simplifications. Carry them forward.
 The single source of truth for turning `site:home.formats[key=readings].title` into a value lookup. Used by the browser editor and by the build-time validator, so it must be pure ES module code with no DOM and no `node:fs`.
 
 **Files:**
-- Create: `editor/lib/paths.js`
+- Create: `editor/package.json`, `editor/lib/paths.js`
 - Test: `editor/lib/paths.test.js`
+
+**Why `editor/package.json` exists:** the root `package.json` has no `"type"` field, so Node treats every `.js` file as CommonJS and `export`/`import` syntax throws. The browser needs these files to keep the `.js` extension. A one-line `editor/package.json` scopes ESM to `editor/` only, leaving `scripts/validate-content.js` and `scripts/optimize-images.js` as CommonJS. Without it, every test in this plan fails to load.
 
 **Interfaces:**
 - Consumes: nothing.
@@ -187,7 +190,17 @@ test("collectMatches throws when one member lacks the field", () => {
 Run: `node --test editor/lib/paths.test.js`
 Expected: FAIL — `Cannot find module` for `./paths.js`.
 
-- [ ] **Step 3: Write the implementation**
+- [ ] **Step 3: Declare `editor/` as an ES module scope**
+
+Create `editor/package.json`:
+
+```json
+{
+  "type": "module"
+}
+```
+
+- [ ] **Step 4: Write the implementation**
 
 Create `editor/lib/paths.js`:
 
@@ -295,24 +308,26 @@ export function collectMatches(data, segments) {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `node --test editor/lib/paths.test.js`
 Expected: PASS, 13 tests.
 
-- [ ] **Step 5: Add the test script and commit**
+- [ ] **Step 6: Add the test script and commit**
 
 In `package.json`, add to `scripts`:
 
 ```json
-"test": "node --test \"editor/lib/*.test.js\" \"scripts/*.test.mjs\" \"worker/src/*.test.mjs\""
+"test": "node --test"
 ```
 
+Bare `node --test` recursively discovers every `*.test.js` and `*.test.mjs` in the repository, skipping `node_modules`. Do **not** use glob arguments: glob support in `node --test` requires Node 22, and this repository's engine floor is `>=20.9`. Directory arguments do not work either — Node treats them as files to execute, not directories to search.
+
 Run: `npm test`
-Expected: PASS. (`node --test` reports no error for glob patterns that match nothing yet.)
+Expected: PASS, 13 tests.
 
 ```bash
-git add editor/lib/paths.js editor/lib/paths.test.js package.json
+git add editor/package.json editor/lib/paths.js editor/lib/paths.test.js package.json
 git commit -m "feat(editor): shared data-edit path parser"
 ```
 
@@ -540,12 +555,16 @@ In `.github/workflows/validate-content.yml`, change the run step from `npm run v
       - "editor/**"
 ```
 
-In `_config.yml`, add to `exclude` so the plan and spec markdown are not published as pages and the Worker source is not copied into the site:
+In `_config.yml`, add to `exclude` so the plan and spec markdown are not published as pages, the Worker source is not copied into the site, and the editor's test files and ESM marker are not served publicly:
 
 ```yaml
   - docs
   - worker
+  - editor/package.json
+  - "editor/**/*.test.js"
 ```
+
+Excluding the test files also keeps `_site/` free of copies, so `npm test` does not discover and run duplicates of them after a Jekyll build.
 
 - [ ] **Step 9: Verify the whole check passes and commit**
 
