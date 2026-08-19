@@ -28,6 +28,16 @@ function authRequest(password, ip = "203.0.113.1") {
   });
 }
 
+// makeEnv spreads overrides over its defaults, so passing e.g.
+// {EDITOR_PASSWORD: undefined} would still leave the key present (with an
+// undefined value). To faithfully simulate a secret that was never set on
+// the deployment, delete the key from the built env instead of overriding it.
+function envWithout(name) {
+  const env = makeEnv();
+  delete env[name];
+  return env;
+}
+
 test("a correct password returns a session token", async () => {
   const response = await worker.fetch(authRequest("correct-horse-battery-staple"), makeEnv());
   assert.equal(response.status, 200);
@@ -88,4 +98,33 @@ test("a preflight request echoes the allowed origin only", async () => {
 test("an unknown route returns 404", async () => {
   const response = await worker.fetch(new Request("https://api.example.com/nope"), makeEnv());
   assert.equal(response.status, 404);
+});
+
+test("a correct-looking password with EDITOR_PASSWORD absent from env returns 500 and no token", async () => {
+  const response = await worker.fetch(
+    authRequest("correct-horse-battery-staple"),
+    envWithout("EDITOR_PASSWORD")
+  );
+  assert.equal(response.status, 500);
+  const body = await response.json();
+  assert.equal(body.token, undefined);
+  assert.doesNotMatch(body.error, /EDITOR_PASSWORD/);
+});
+
+test("an empty-string password with EDITOR_PASSWORD absent from env returns 500 and no token", async () => {
+  const response = await worker.fetch(authRequest(""), envWithout("EDITOR_PASSWORD"));
+  assert.equal(response.status, 500);
+  const body = await response.json();
+  assert.equal(body.token, undefined);
+});
+
+test("a correct password with SESSION_SECRET absent from env returns 500 rather than authenticating", async () => {
+  const response = await worker.fetch(
+    authRequest("correct-horse-battery-staple"),
+    envWithout("SESSION_SECRET")
+  );
+  assert.equal(response.status, 500);
+  const body = await response.json();
+  assert.equal(body.token, undefined);
+  assert.doesNotMatch(body.error, /SESSION_SECRET/);
 });

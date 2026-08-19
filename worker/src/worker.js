@@ -74,7 +74,24 @@ function json(env, request, status, body) {
   });
 }
 
+function isMissingSecret(value) {
+  return typeof value !== "string" || value.length === 0;
+}
+
+function requireSecrets(env, request, names) {
+  for (const name of names) {
+    if (isMissingSecret(env[name])) {
+      console.error(`Worker misconfigured: ${name} is not set.`);
+      return json(env, request, 500, { error: "Server misconfiguration." });
+    }
+  }
+  return null;
+}
+
 async function handleAuth(request, env) {
+  const configError = requireSecrets(env, request, ["EDITOR_PASSWORD", "SESSION_SECRET"]);
+  if (configError) return configError;
+
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const rateKey = `auth-failures:${ip}`;
   const failures = Number((await env.RATE_LIMIT.get(rateKey)) || 0);
