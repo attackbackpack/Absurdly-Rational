@@ -19,3 +19,10 @@ button[data-variant="quiet"] { background: #262a35; }
 #toolbar-title { font-weight: 600; }
 #status { margin-left: auto; font-size: 14px; opacity: .8; }
 #preview { flex: 1; width: 100%; border: 0; background: #fff; }
+
+#ar-panel { position: fixed; inset: 0; background: rgba(4,5,8,.55); display: grid; place-items: center; z-index: 20; }
+.ar-panel-box { width: min(420px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; background: var(--ar-panel); border-radius: 14px; padding: 24px; display: grid; gap: 14px; }
+.ar-panel-box h2 { margin: 0; font-size: 18px; }
+.ar-field { display: grid; gap: 6px; font-size: 13px; opacity: .9; }
+.ar-field textarea { min-height: 68px; resize: vertical; }
+.ar-notice { margin: 0; font-size: 13px; opacity: .7; }

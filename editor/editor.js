@@ -1,6 +1,7 @@
 import { createApi } from "./lib/api.js";
 import { createDraft } from "./lib/draft.js";
 import { attachOverlay } from "./lib/overlay.js";
+import { openImagePanel, openSettingsPanel } from "./lib/panels.js";
 
 const api = createApi(document.body.dataset.api);
 const previewUrl = new URLSearchParams(location.search).get("preview") || "/preview/index.html";
@@ -26,8 +27,8 @@ function onDirty() {
   setStatus(draft && draft.isDirty() ? "Unsaved changes" : "");
 }
 
-function onImageClick() {
-  setStatus("Image editing arrives in the next step.");
+function onImageClick(anchor, spec) {
+  openImagePanel({ anchor, spec, draft, onDirty });
 }
 
 async function start() {
@@ -57,6 +58,10 @@ form.addEventListener("submit", async (event) => {
     signin.hidden = false;
     workspace.hidden = true;
   }
+});
+
+document.getElementById("settings-button").addEventListener("click", () => {
+  openSettingsPanel({ draft, onDirty });
 });
 
 reloadButton.addEventListener("click", () => {
