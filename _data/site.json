@@ -10,7 +10,8 @@
     "path": "assets/rooster-light.png",
     "alt": "The Absurdly Rational rooster mark",
     "fit": "contain",
-    "focus": "center"
+    "focus": "center",
+    "decorative": false
   },
   "navigation": [
     {
@@ -44,15 +45,14 @@
     "hero": {
       "title_line_one": "Absurdly",
       "title_line_two": "Rational",
-      "thesis": "Reality, with better footnotes.",
+      "thesis": "Reality, with better footnotes. (test)",
       "description": "Unapologetically irreverent, evidence-based arguments against the existential threats of confident ignorance and directed disinformation, offered for your entertainment and enlightenment.",
       "cta_label": "Choose your format",
       "cta_url": "#formats",
       "image": {
-        "path": "",
-        "alt": "",
         "fit": "contain",
-        "focus": "center"
+        "focus": "center",
+        "decorative": false
       }
     },
     "formats_intro": {
@@ -68,8 +68,7 @@
         "meta": "Long reads on Substack",
         "url": "readings.html",
         "image": {
-          "path": "",
-          "alt": "",
+          "decorative": false,
           "fit": "cover",
           "focus": "center"
         }
@@ -82,8 +81,7 @@
         "meta": "Listen and guest appearances",
         "url": "podcasts.html",
         "image": {
-          "path": "",
-          "alt": "",
+          "decorative": false,
           "fit": "cover",
           "focus": "center"
         }
@@ -96,8 +94,7 @@
         "meta": "A starter set of branded absurdity",
         "url": "memes.html",
         "image": {
-          "path": "",
-          "alt": "",
+          "decorative": false,
           "fit": "cover",
           "focus": "center"
         }
