@@ -265,10 +265,17 @@ async function handlePutContent(request, env) {
   if (files.length === 0) {
     return json(env, request, 400, { error: "No files to save." });
   }
-  const rejected = files.filter((file) => !isAllowedPath(file.path));
+  const isFileEntry = (file) => file !== null && typeof file === "object" && !Array.isArray(file);
+  const describeFile = (file) =>
+    isFileEntry(file) && typeof file.path === "string"
+      ? file.path
+      : file === undefined
+        ? "undefined"
+        : JSON.stringify(file);
+  const rejected = files.filter((file) => !isFileEntry(file) || !isAllowedPath(file.path));
   if (rejected.length) {
     return json(env, request, 400, {
-      error: `This editor may not write: ${rejected.map((f) => f.path).join(", ")}`
+      error: `This editor may not write: ${rejected.map(describeFile).join(", ")}`
     });
   }
 

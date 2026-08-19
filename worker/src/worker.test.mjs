@@ -321,6 +321,18 @@ test("the allowlist rejects _data subdirectories", () => {
   assert.equal(isAllowedPath("assets/uploads/sub/x.png"), false);
 });
 
+// Pins the `candidate.includes("..")` guard specifically. ".." is inside the
+// assets/uploads character class ([A-Za-z0-9._-]), so these three paths
+// match ALLOWED_PATHS[1] on the regex alone and are stopped only by the
+// substring guard. Without this test, deleting `includes("..")` as
+// "redundant with the regex" leaves the whole suite green while
+// assets/uploads/.. (and friends) become writable again.
+test("the .. guard rejects traversal-shaped filenames the regex alone would allow", () => {
+  assert.equal(isAllowedPath("assets/uploads/.."), false);
+  assert.equal(isAllowedPath("assets/uploads/..."), false);
+  assert.equal(isAllowedPath("assets/uploads/a..b"), false);
+});
+
 function mockCommitApi({ headSha = "abc123" } = {}) {
   const calls = [];
   mock.method(globalThis, "fetch", async (input, init = {}) => {
@@ -364,7 +376,7 @@ async function putRequest(env, body) {
 test("PUT /content writes an allowed file and returns the new commit sha", async () => {
   const env = githubEnv();
   env.__installationToken = "ghs_test";
-  mockCommitApi();
+  const calls = mockCommitApi();
   const response = await worker.fetch(
     await putRequest(env, {
       files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
@@ -376,6 +388,26 @@ test("PUT /content writes an allowed file and returns the new commit sha", async
   mock.restoreAll();
   assert.equal(response.status, 200);
   assert.equal((await response.json()).commitSha, "newcommit");
+
+  // Pins the write target: mutating BRANCH to "main" must fail this test.
+  // mockCommitApi matches ref URLs branch-agnostically, so without this
+  // assertion nothing in the PUT suite would notice a write to main.
+  const refUpdate = calls.find((call) => call.method === "PATCH");
+  assert.ok(refUpdate, "expected a PATCH call updating the branch ref");
+  assert.ok(
+    refUpdate.url.endsWith("/git/refs/heads/editor"),
+    `ref update must target the editor branch, got ${refUpdate.url}`
+  );
+
+  // Pins the blob mode: mutating "100644" to "120000" (a symlink) must fail
+  // this test. A symlink blob under assets/uploads/ pointing outside the
+  // repo is exactly the escalation the allowlist exists to prevent.
+  const treeCall = calls.find((call) => call.url.endsWith("/git/trees"));
+  assert.ok(treeCall, "expected a POST call creating the tree");
+  const treeBody = JSON.parse(treeCall.body);
+  for (const entry of treeBody.tree) {
+    assert.equal(entry.mode, "100644");
+  }
 });
 
 test("PUT /content rejects a disallowed path before calling GitHub", async () => {
@@ -413,6 +445,95 @@ test("PUT /content rejects the whole batch if any one path is disallowed", async
   mock.restoreAll();
   assert.equal(response.status, 400);
   assert.equal(calls.length, 0);
+});
+
+// A malformed files array must produce a normal 400 response, not an
+// uncaught TypeError. An uncaught throw inside worker.fetch escapes the
+// json()/corsHeaders() path entirely, so Cloudflare renders a bare 500 with
+// no CORS headers at all — the browser then reports a CORS failure instead
+// of the real error, which is a dead end for the editor UI. Checking the
+// CORS header here (not just the status code) is what would have caught
+// that: a response built by json() always carries it, one built by
+// Cloudflare's own crash page never does.
+test("PUT /content with a null file entry returns 400 with CORS headers, not a crash", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  const calls = mockCommitApi();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/content", {
+      method: "PUT",
+      headers: {
+        authorization: await bearer(env),
+        "content-type": "application/json",
+        origin: env.ALLOWED_ORIGIN
+      },
+      body: JSON.stringify({ files: [null], baseCommitSha: "abc123", message: "x" })
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 400);
+  assert.equal(response.headers.get("access-control-allow-origin"), env.ALLOWED_ORIGIN);
+  assert.equal(calls.length, 0);
+});
+
+// JSON has no literal for JS's `undefined` (JSON.stringify collapses an
+// undefined array element to null, which is exactly the case above), so the
+// only way an "undefined" reaches the parser over the wire is as invalid
+// JSON syntax — the bare keyword where a value is expected. That must still
+// come back as an ordinary 400 through the existing "Malformed request
+// body" branch, not an uncaught exception.
+test("PUT /content with a body containing a bare `undefined` token returns 400 with CORS headers, not a crash", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  const calls = mockCommitApi();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/content", {
+      method: "PUT",
+      headers: {
+        authorization: await bearer(env),
+        "content-type": "application/json",
+        origin: env.ALLOWED_ORIGIN
+      },
+      body: '{"files":[undefined],"baseCommitSha":"abc123","message":"x"}'
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 400);
+  assert.equal(response.headers.get("access-control-allow-origin"), env.ALLOWED_ORIGIN);
+  assert.equal(calls.length, 0);
+});
+
+test("PUT /content rejects a mixed batch of a valid entry and non-object entries without crashing", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  const calls = mockCommitApi();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/content", {
+      method: "PUT",
+      headers: {
+        authorization: await bearer(env),
+        "content-type": "application/json",
+        origin: env.ALLOWED_ORIGIN
+      },
+      body: JSON.stringify({
+        files: [{ path: "_data/site.json", contentBase64: btoa("{}") }, 42, "x"],
+        baseCommitSha: "abc123",
+        message: "mixed"
+      })
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 400);
+  assert.equal(response.headers.get("access-control-allow-origin"), env.ALLOWED_ORIGIN);
+  assert.equal(calls.length, 0);
+  const body = await response.json();
+  // The error message must be readable for non-object entries, not the
+  // empty-string join that came from mapping straight to `.path`.
+  assert.match(body.error, /42/);
+  assert.match(body.error, /"x"/);
 });
 
 test("PUT /content returns 409 when the base commit is stale", async () => {
