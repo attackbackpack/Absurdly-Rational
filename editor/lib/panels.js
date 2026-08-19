@@ -115,7 +115,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty }) {
     select("Image fit", FITS, image.fit || "cover", (value) => {
       draft.write(`${spec}.fit`, value);
       if (img) {
-        img.classList.remove(...FITS.map((f) => `image-fit-${f}`));
+        img.classList.remove(...FITS.map(fitClass));
         img.classList.add(fitClass(value));
       }
       onDirty();
@@ -126,7 +126,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty }) {
     select("Crop focus", FOCUSES, image.focus || "center", (value) => {
       draft.write(`${spec}.focus`, value);
       if (img) {
-        img.classList.remove(...FOCUSES.map((f) => `image-focus-${f}`));
+        img.classList.remove(...FOCUSES.map(focusClass));
         img.classList.add(focusClass(value));
       }
       onDirty();
