@@ -26,3 +26,5 @@ button[data-variant="quiet"] { background: #262a35; }
 .ar-field { display: grid; gap: 6px; font-size: 13px; opacity: .9; }
 .ar-field textarea { min-height: 68px; resize: vertical; }
 .ar-notice { margin: 0; font-size: 13px; opacity: .7; }
+.ar-problem { margin: 0; font-size: 13px; color: #ffb4b4; }
+.ar-problem[hidden] { display: none; }

@@ -1,4 +1,5 @@
 import { FITS, FOCUSES, fitClass, focusClass } from "./imagefit.js";
+import { uploadRejection } from "./draft.js";
 
 const LINK_FIELDS = [["site:home.hero.cta_url", "Hero button link"]];
 
@@ -10,30 +11,48 @@ const SEO_FIELDS = [
   ["site:home.seo.twitter_description", "Twitter description"]
 ];
 
+let closeOpenPanel = null;
+
 export function closePanel() {
-  const root = document.getElementById("ar-panel");
-  if (root) root.remove();
+  if (closeOpenPanel) closeOpenPanel();
+  const stray = document.getElementById("ar-panel");
+  if (stray) stray.remove();
 }
 
 function panelRoot() {
-  let root = document.getElementById("ar-panel");
-  if (root) root.remove();
-  root = document.createElement("div");
+  closePanel();
+  const root = document.createElement("div");
   root.id = "ar-panel";
   document.body.appendChild(root);
 
-  const close = () => root.remove();
+  // Not { once: true }: that removed the listener on the first keydown of any
+  // key, so typing one character into a field disarmed Escape. Remove it
+  // explicitly when the panel closes instead.
+  const onKeydown = (event) => {
+    if (event.key === "Escape") close();
+  };
+  const close = () => {
+    document.removeEventListener("keydown", onKeydown);
+    if (closeOpenPanel === close) closeOpenPanel = null;
+    root.remove();
+  };
+  closeOpenPanel = close;
+
   root.addEventListener("click", (event) => {
     if (event.target === root) close();
   });
-  document.addEventListener(
-    "keydown",
-    (event) => {
-      if (event.key === "Escape") close();
-    },
-    { once: true }
-  );
+  document.addEventListener("keydown", onKeydown);
   return { root, close };
+}
+
+// The click that opens a panel happens inside the preview iframe, so focus is
+// still in the iframe's document and keydown never reaches the shell — Escape
+// would be dead until the user clicked the shell. Focusing the panel's first
+// control fixes that and gives keyboard users an entry point.
+function present(root, box) {
+  root.appendChild(box);
+  const first = box.querySelector("input, select, textarea, button");
+  if (first) first.focus();
 }
 
 function field(label, value, onChange, type = "text") {
@@ -72,12 +91,32 @@ async function fileToBase64(file) {
   return btoa(binary);
 }
 
-export function openImagePanel({ anchor, spec, draft, onDirty }) {
+export function openImagePanel({ anchor, spec, draft, onDirty, decorative = false }) {
   const { root, close } = panelRoot();
   const box = document.createElement("div");
   box.className = "ar-panel-box";
   const image = draft.read(spec);
   const img = anchor.querySelector("img.image-object");
+  // _includes/image.html renders alt="" when `include.decorative or
+  // image.decorative`; mirror both inputs. `decorative` comes from the template
+  // via the call site (door art is always decorative there, whatever the data
+  // says), `image.decorative` from the content itself.
+  const isDecorative = decorative || image.decorative === true;
+
+  // scripts/validate-content.js only runs validateImage on an object that has
+  // path, alt, fit and focus as own properties. Every image in _data/site.json
+  // ships with fit and focus but neither path nor alt, so whether the
+  // accessibility gate ran at all depended on which controls the user happened
+  // to touch — clearing the alt box created the key and failed CI, while never
+  // opening it let an image ship with no alt at all. Seed both to their current
+  // effective values so the gate is decided by the content, not the click order.
+  let seeded = false;
+  for (const key of ["path", "alt"]) {
+    if (typeof image[key] !== "string") {
+      draft.write(`${spec}.${key}`, "");
+      seeded = true;
+    }
+  }
 
   const heading = document.createElement("h2");
   heading.textContent = "Image";
@@ -94,9 +133,48 @@ export function openImagePanel({ anchor, spec, draft, onDirty }) {
   const picker = document.createElement("input");
   picker.type = "file";
   picker.accept = ".jpg,.jpeg,.png,.webp";
+
+  const problem = document.createElement("p");
+  problem.className = "ar-problem";
+  problem.setAttribute("role", "alert");
+  problem.hidden = true;
+  const reject = (text) => {
+    problem.textContent = text;
+    problem.hidden = false;
+    // Without this the same file cannot be chosen twice in a row: no change
+    // event fires when the value is unchanged.
+    picker.value = "";
+  };
+
   picker.addEventListener("change", async () => {
     const file = picker.files[0];
     if (!file) return;
+    problem.hidden = true;
+    // `accept` is only a dialog hint, and assets/uploads/ is re-validated in CI
+    // on every push — an oversized or wrong-format file staged here would fail
+    // the owner's build long after this panel closed. Check before staging.
+    const nameOrSize = uploadRejection({ name: file.name, size: file.size });
+    if (nameOrSize) {
+      reject(nameOrSize);
+      return;
+    }
+    let bitmap = null;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      bitmap = null;
+    }
+    const dimensions = uploadRejection({
+      name: file.name,
+      size: file.size,
+      width: bitmap && bitmap.width,
+      height: bitmap && bitmap.height
+    });
+    if (bitmap && bitmap.close) bitmap.close();
+    if (dimensions) {
+      reject(dimensions);
+      return;
+    }
     const repoPath = draft.stageUpload(file.name, await fileToBase64(file));
     draft.write(`${spec}.path`, repoPath);
     if (img) img.src = URL.createObjectURL(file);
@@ -107,14 +185,22 @@ export function openImagePanel({ anchor, spec, draft, onDirty }) {
   pickerLabel.textContent = "Replace image";
   pickerLabel.appendChild(picker);
   box.appendChild(pickerLabel);
+  box.appendChild(problem);
 
-  box.appendChild(
-    field("Alternative text", image.alt, (value) => {
-      draft.write(`${spec}.alt`, value);
-      if (img) img.alt = value;
-      onDirty();
-    })
-  );
+  if (isDecorative) {
+    const note = document.createElement("p");
+    note.className = "ar-notice";
+    note.textContent = "This artwork is decorative, so screen readers skip it. It needs no description.";
+    box.appendChild(note);
+  } else {
+    box.appendChild(
+      field("Alternative text (describe the image for screen readers)", image.alt, (value) => {
+        draft.write(`${spec}.alt`, value);
+        if (img) img.alt = value;
+        onDirty();
+      })
+    );
+  }
 
   box.appendChild(
     select("Image fit", FITS, image.fit || "cover", (value) => {
@@ -143,7 +229,9 @@ export function openImagePanel({ anchor, spec, draft, onDirty }) {
   done.addEventListener("click", close);
   box.appendChild(done);
 
-  root.appendChild(box);
+  present(root, box);
+  // Seeding is a real change to site.json, so the toolbar must say so.
+  if (seeded) onDirty();
 }
 
 export function openSettingsPanel({ draft, onDirty }) {
@@ -188,5 +276,5 @@ export function openSettingsPanel({ draft, onDirty }) {
   done.addEventListener("click", close);
   box.appendChild(done);
 
-  root.appendChild(box);
+  present(root, box);
 }
