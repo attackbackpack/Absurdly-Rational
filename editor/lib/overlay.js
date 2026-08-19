@@ -1,0 +1,77 @@
+const OVERLAY_STYLE = `
+[data-edit], [data-edit-image] { outline-offset: 3px; cursor: text; }
+[data-edit]:hover { outline: 2px dashed rgba(111,123,255,.9); }
+[data-edit-image] { cursor: pointer; }
+[data-edit-image]:hover { outline: 2px dashed rgba(111,123,255,.9); }
+[data-edit][contenteditable="plaintext-only"] { outline: 2px solid rgba(111,123,255,1); background: rgba(111,123,255,.08); }
+.ar-editing-blocked { cursor: not-allowed !important; }
+`;
+
+export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
+  const doc = frame.contentDocument;
+  const style = doc.createElement("style");
+  style.textContent = OVERLAY_STYLE;
+  doc.head.appendChild(style);
+
+  const listeners = [];
+  const on = (target, type, handler, options) => {
+    target.addEventListener(type, handler, options);
+    listeners.push(() => target.removeEventListener(type, handler, options));
+  };
+
+  // Links must not navigate while editing.
+  on(doc, "click", (event) => {
+    const link = event.target.closest("a");
+    if (link) event.preventDefault();
+  }, true);
+
+  for (const node of doc.querySelectorAll("[data-edit]")) {
+    node.setAttribute("contenteditable", "plaintext-only");
+    node.setAttribute("spellcheck", "true");
+
+    on(node, "input", () => {
+      draft.write(node.dataset.edit, node.textContent);
+      onDirty();
+    });
+
+    on(node, "paste", (event) => {
+      event.preventDefault();
+      const text = (event.clipboardData || frame.contentWindow.clipboardData).getData("text/plain");
+      doc.execCommand("insertText", false, text.replace(/\s+/g, " "));
+    });
+
+    on(node, "keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        node.blur();
+      }
+      if (event.key === "Escape") {
+        node.textContent = draft.read(node.dataset.edit);
+        node.blur();
+      }
+    });
+
+    on(node, "blur", () => {
+      const text = node.textContent.replace(/\s+/g, " ").trim();
+      node.textContent = text;
+      draft.write(node.dataset.edit, text);
+      onDirty();
+    });
+  }
+
+  for (const node of doc.querySelectorAll("[data-edit-image]")) {
+    on(node, "click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onImageClick(node, node.dataset.editImage);
+    });
+  }
+
+  return {
+    detach() {
+      listeners.forEach((remove) => remove());
+      style.remove();
+      doc.querySelectorAll("[contenteditable]").forEach((node) => node.removeAttribute("contenteditable"));
+    }
+  };
+}

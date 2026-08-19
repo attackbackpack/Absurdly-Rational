@@ -1,4 +1,6 @@
 import { createApi } from "./lib/api.js";
+import { createDraft } from "./lib/draft.js";
+import { attachOverlay } from "./lib/overlay.js";
 
 const api = createApi(document.body.dataset.api);
 const previewUrl = new URLSearchParams(location.search).get("preview") || "/preview/index.html";
@@ -8,10 +10,38 @@ const form = document.getElementById("signin-form");
 const errorBox = document.getElementById("signin-error");
 const workspace = document.getElementById("workspace");
 const frame = document.getElementById("preview");
+const status = document.getElementById("status");
+const saveButton = document.getElementById("save-button");
+const reloadButton = document.getElementById("reload-button");
 
-function showWorkspace() {
+let draft = null;
+let overlay = null;
+
+function setStatus(message) {
+  status.textContent = message;
+}
+
+function onDirty() {
+  saveButton.disabled = !draft || !draft.isDirty();
+  setStatus(draft && draft.isDirty() ? "Unsaved changes" : "");
+}
+
+function onImageClick() {
+  setStatus("Image editing arrives in the next step.");
+}
+
+async function start() {
   signin.hidden = true;
   workspace.hidden = false;
+  setStatus("Loading…");
+  const content = await api.loadContent();
+  draft = createDraft(content.site, content.baseCommitSha);
+  frame.addEventListener("load", () => {
+    if (overlay) overlay.detach();
+    overlay = attachOverlay({ frame, draft, onDirty, onImageClick });
+    onDirty();
+    setStatus("");
+  });
   frame.src = previewUrl;
 }
 
@@ -20,13 +50,29 @@ form.addEventListener("submit", async (event) => {
   errorBox.hidden = true;
   try {
     await api.login(document.getElementById("password").value);
-    showWorkspace();
+    await start();
   } catch (error) {
     errorBox.textContent = error.message;
     errorBox.hidden = false;
+    signin.hidden = false;
+    workspace.hidden = true;
   }
 });
 
+reloadButton.addEventListener("click", () => {
+  if (draft && draft.isDirty() && !confirm("Reloading discards unsaved changes. Continue?")) return;
+  location.reload();
+});
+
+window.addEventListener("beforeunload", (event) => {
+  if (draft && draft.isDirty()) event.preventDefault();
+});
+
 if (api.hasSession()) {
-  showWorkspace();
+  start().catch((error) => {
+    errorBox.textContent = error.message;
+    errorBox.hidden = false;
+    signin.hidden = false;
+    workspace.hidden = true;
+  });
 }
