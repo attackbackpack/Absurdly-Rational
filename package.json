@@ -6,7 +6,8 @@
   "scripts": {
     "validate:content": "node scripts/validate-content.js",
     "optimize:images": "node scripts/optimize-images.js",
-    "check": "npm run validate:content"
+    "check": "npm run validate:content",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20.9"
