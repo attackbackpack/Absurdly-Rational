@@ -53,6 +53,7 @@ Two, both simplifications. Carry them forward.
 | `editor/index.html` | Shell page with `noindex`. |
 | `scripts/validate-edit-paths.mjs` | Fails the build if any `data-edit` attribute does not resolve. |
 | `scripts/validate-edit-paths.test.mjs` | Unit tests for the extraction logic. |
+| `worker/package.json` | `{"type": "module"}` — scopes ESM to `worker/` so the Node test runner can import `worker.js`. |
 | `worker/src/worker.js` | Auth, GitHub App token, `GET`/`PUT /content`, allowlist. |
 | `worker/src/worker.test.mjs` | Unit tests with mocked `fetch` and KV. |
 | `worker/wrangler.toml` | Worker config. |
@@ -581,7 +582,9 @@ git commit -m "feat(editor): annotate homepage with data-edit paths and enforce 
 ### Task 3: Worker skeleton and password auth
 
 **Files:**
-- Create: `worker/src/worker.js`, `worker/src/worker.test.mjs`, `worker/wrangler.toml`
+- Create: `worker/package.json`, `worker/src/worker.js`, `worker/src/worker.test.mjs`, `worker/wrangler.toml`
+
+**Why `worker/package.json` exists:** same reason as `editor/package.json` in Task 1. `worker/src/worker.js` uses `export` syntax, and the root `package.json` has no `"type"` field, so Node classifies `.js` as CommonJS and the file fails to parse when `worker.test.mjs` imports it. Cloudflare Workers handle ESM regardless of this file; it exists for the Node test runner.
 
 **Interfaces:**
 - Consumes: nothing.
@@ -691,7 +694,17 @@ test("an unknown route returns 404", async () => {
 Run: `node --test worker/src/worker.test.mjs`
 Expected: FAIL — `Cannot find module './worker.js'`.
 
-- [ ] **Step 3: Write the Worker**
+- [ ] **Step 3: Declare `worker/` as an ES module scope**
+
+Create `worker/package.json`:
+
+```json
+{
+  "type": "module"
+}
+```
+
+- [ ] **Step 4: Write the Worker**
 
 Create `worker/src/worker.js`:
 
@@ -833,15 +846,17 @@ ALLOWED_ORIGIN = "https://absurdlyrational.com"
 
 The `id` above is filled in by the repository owner during deployment; `worker/SETUP.md` in Task 12 gives the exact command that prints it.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `node --test worker/src/worker.test.mjs`
 Expected: PASS, 8 tests.
 
-- [ ] **Step 5: Commit**
+Also run the whole suite to confirm nothing regressed: `npm test` — expected 25 tests passing (13 from Task 1, 4 from Task 2, 8 here).
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add worker/src/worker.js worker/src/worker.test.mjs worker/wrangler.toml
+git add worker/package.json worker/src/worker.js worker/src/worker.test.mjs worker/wrangler.toml
 git commit -m "feat(worker): password auth with signed sessions and per-IP rate limiting"
 ```
 
