@@ -1,0 +1,39 @@
+---
+permalink: /editor/index.html
+sitemap: false
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Site editor</title>
+<link rel="stylesheet" href="{{ "/editor/editor.css" | relative_url }}">
+</head>
+<body data-api="https://absurdly-rational-editor-api.workers.dev">
+  <div id="signin">
+    <form id="signin-form">
+      <h1>Site editor</h1>
+      <p>Enter the editor password to make changes to the draft site.</p>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Sign in</button>
+      <p id="signin-error" role="alert" hidden></p>
+    </form>
+  </div>
+
+  <div id="workspace" hidden>
+    <header id="toolbar">
+      <span id="toolbar-title">Editing the draft homepage</span>
+      <span id="status" role="status"></span>
+      <button type="button" id="settings-button">Page settings</button>
+      <button type="button" id="reload-button">Reload preview</button>
+      <button type="button" id="save-button" disabled>Save</button>
+    </header>
+    <iframe id="preview" title="Homepage preview"></iframe>
+  </div>
+
+  <script type="module" src="{{ "/editor/editor.js" | relative_url }}"></script>
+</body>
+</html>

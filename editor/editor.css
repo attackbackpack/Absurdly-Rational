@@ -1,0 +1,21 @@
+:root { color-scheme: dark; --ar-accent: #6f7bff; --ar-bg: #07080a; --ar-panel: #14161c; --ar-text: #e9ecf5; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--ar-bg); color: var(--ar-text); }
+
+#signin { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
+#signin-form { width: 100%; max-width: 380px; background: var(--ar-panel); padding: 32px; border-radius: 14px; }
+#signin-form h1 { margin: 0 0 8px; font-size: 24px; }
+#signin-form p { margin: 0 0 24px; opacity: .75; font-size: 14px; }
+#signin-form label { display: block; margin-bottom: 6px; font-size: 13px; opacity: .75; }
+input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #2b2f3a; background: #0d0f14; color: inherit; font: inherit; }
+button { padding: 10px 16px; border-radius: 8px; border: 0; background: var(--ar-accent); color: #fff; font: inherit; cursor: pointer; }
+button:disabled { opacity: .4; cursor: default; }
+button[data-variant="quiet"] { background: #262a35; }
+#signin-form button { width: 100%; margin-top: 16px; }
+#signin-error { color: #ff8f8f; margin-top: 12px; font-size: 14px; }
+
+#workspace { display: flex; flex-direction: column; height: 100vh; }
+#toolbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--ar-panel); border-bottom: 1px solid #23262f; }
+#toolbar-title { font-weight: 600; }
+#status { margin-left: auto; font-size: 14px; opacity: .8; }
+#preview { flex: 1; width: 100%; border: 0; background: #fff; }
