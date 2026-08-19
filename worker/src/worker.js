@@ -233,6 +233,86 @@ async function handleGetContent(request, env) {
   }
 }
 
+const ALLOWED_PATHS = [/^_data\/[a-z-]+\.json$/, /^assets\/uploads\/[A-Za-z0-9._-]+$/];
+
+export function isAllowedPath(candidate) {
+  if (typeof candidate !== "string" || candidate.includes("..")) return false;
+  return ALLOWED_PATHS.some((pattern) => pattern.test(candidate));
+}
+
+async function handlePutContent(request, env) {
+  const configError = requireSecrets(env, request, [
+    "SESSION_SECRET",
+    "GITHUB_APP_ID",
+    "GITHUB_APP_PRIVATE_KEY",
+    "GITHUB_INSTALLATION_ID",
+    "GITHUB_REPO"
+  ]);
+  if (configError) return configError;
+
+  if (!(await authorize(request, env))) {
+    return json(env, request, 401, { error: "Sign in again." });
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch {
+    return json(env, request, 400, { error: "Malformed request body." });
+  }
+
+  const files = Array.isArray(payload.files) ? payload.files : [];
+  if (files.length === 0) {
+    return json(env, request, 400, { error: "No files to save." });
+  }
+  const rejected = files.filter((file) => !isAllowedPath(file.path));
+  if (rejected.length) {
+    return json(env, request, 400, {
+      error: `This editor may not write: ${rejected.map((f) => f.path).join(", ")}`
+    });
+  }
+
+  try {
+    const ref = await github(env, `/git/ref/heads/${BRANCH}`);
+    if (ref.object.sha !== payload.baseCommitSha) {
+      return json(env, request, 409, {
+        error: "Someone else changed the draft while you were editing. Reload before saving."
+      });
+    }
+
+    const blobs = [];
+    for (const file of files) {
+      const blob = await github(env, "/git/blobs", {
+        method: "POST",
+        body: JSON.stringify({ content: file.contentBase64, encoding: "base64" })
+      });
+      blobs.push({ path: file.path, mode: "100644", type: "blob", sha: blob.sha });
+    }
+
+    const baseCommit = await github(env, `/git/commits/${ref.object.sha}`);
+    const tree = await github(env, "/git/trees", {
+      method: "POST",
+      body: JSON.stringify({ base_tree: baseCommit.tree.sha, tree: blobs })
+    });
+    const commit = await github(env, "/git/commits", {
+      method: "POST",
+      body: JSON.stringify({
+        message: String(payload.message || "content(update): site editor"),
+        tree: tree.sha,
+        parents: [ref.object.sha]
+      })
+    });
+    await github(env, `/git/refs/heads/${BRANCH}`, {
+      method: "PATCH",
+      body: JSON.stringify({ sha: commit.sha })
+    });
+
+    return json(env, request, 200, { commitSha: commit.sha });
+  } catch (error) {
+    return json(env, request, 502, { error: `Could not save. ${error.message}` });
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -245,6 +325,9 @@ export default {
     }
     if (url.pathname === "/content" && request.method === "GET") {
       return handleGetContent(request, env);
+    }
+    if (url.pathname === "/content" && request.method === "PUT") {
+      return handlePutContent(request, env);
     }
     return json(env, request, 404, { error: "Not found" });
   }

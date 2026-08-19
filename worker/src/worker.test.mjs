@@ -1,6 +1,6 @@
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
-import worker, { signSession, verifySession } from "./worker.js";
+import worker, { signSession, verifySession, isAllowedPath } from "./worker.js";
 
 function makeEnv(overrides = {}) {
   const store = new Map();
@@ -255,4 +255,214 @@ test("GET /content with a missing GitHub secret returns 500, not 502", async () 
   assert.equal(response.status, 500);
   const body = await response.json();
   assert.doesNotMatch(body.error, /GITHUB_APP_ID/);
+});
+
+test("the allowlist accepts data files and uploads", () => {
+  assert.equal(isAllowedPath("_data/site.json"), true);
+  assert.equal(isAllowedPath("_data/readings.json"), true);
+  assert.equal(isAllowedPath("assets/uploads/rooster-2.png"), true);
+});
+
+test("the allowlist rejects templates, workflows, and traversal", () => {
+  assert.equal(isAllowedPath("index.html"), false);
+  assert.equal(isAllowedPath("_includes/head.html"), false);
+  assert.equal(isAllowedPath(".github/workflows/deploy-pages-with-draft-preview.yml"), false);
+  assert.equal(isAllowedPath("_data/../index.html"), false);
+  assert.equal(isAllowedPath("assets/uploads/../../main.js"), false);
+  assert.equal(isAllowedPath("/_data/site.json"), false);
+  assert.equal(isAllowedPath("_data/site.json.bak"), false);
+  assert.equal(isAllowedPath("_data/Site.json"), false);
+});
+
+// Adversarial cases beyond the brief's baseline list. None of these slip
+// through ALLOWED_PATHS today, but each documents a specific attack shape
+// against the allowlist so a future regex edit can't reopen it silently.
+test("the allowlist rejects percent-encoded traversal", () => {
+  assert.equal(isAllowedPath("_data/%2e%2e%2fsite.json"), false);
+  assert.equal(isAllowedPath("_data%2f..%2fsite.json"), false);
+  assert.equal(isAllowedPath("assets/uploads/..%2f..%2fmain.js"), false);
+});
+
+test("the allowlist rejects a backslash separator", () => {
+  assert.equal(isAllowedPath("_data\\..\\site.json"), false);
+});
+
+test("the allowlist rejects a leading ./", () => {
+  assert.equal(isAllowedPath("./_data/site.json"), false);
+});
+
+test("the allowlist rejects an absolute filesystem path", () => {
+  assert.equal(isAllowedPath("/etc/passwd"), false);
+});
+
+test("the allowlist rejects an empty string", () => {
+  assert.equal(isAllowedPath(""), false);
+});
+
+test("the allowlist rejects non-string values", () => {
+  assert.equal(isAllowedPath(undefined), false);
+  assert.equal(isAllowedPath(null), false);
+  assert.equal(isAllowedPath(123), false);
+  assert.equal(isAllowedPath(["_data/site.json"]), false);
+});
+
+test("the allowlist rejects a trailing space or newline", () => {
+  assert.equal(isAllowedPath("_data/site.json "), false);
+  assert.equal(isAllowedPath("_data/site.json\n"), false);
+  assert.equal(isAllowedPath("\n_data/site.json"), false);
+});
+
+test("the allowlist rejects a Unicode look-alike underscore", () => {
+  assert.equal(isAllowedPath("＿data/site.json"), false);
+});
+
+test("the allowlist rejects _data subdirectories", () => {
+  assert.equal(isAllowedPath("_data/sub/foo.json"), false);
+  assert.equal(isAllowedPath("assets/uploads/sub/x.png"), false);
+});
+
+function mockCommitApi({ headSha = "abc123" } = {}) {
+  const calls = [];
+  mock.method(globalThis, "fetch", async (input, init = {}) => {
+    const url = String(input.url ?? input);
+    calls.push({ url, method: init.method || "GET", body: init.body });
+    // GitHub's real API is asymmetric here: reading a ref is singular
+    // (`/git/ref/{ref}`) but updating one is plural (`/git/refs/{ref}`).
+    // Match both so the PATCH that lands the commit isn't mistaken for an
+    // unexpected call.
+    if (url.includes("/git/ref/heads") || url.includes("/git/refs/heads")) {
+      if ((init.method || "GET") === "GET") {
+        return new Response(JSON.stringify({ object: { sha: headSha } }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ object: { sha: "newcommit" } }), { status: 200 });
+    }
+    if (url.endsWith("/git/blobs")) {
+      return new Response(JSON.stringify({ sha: "blobsha" }), { status: 200 });
+    }
+    if (url.includes("/git/commits/")) {
+      return new Response(JSON.stringify({ tree: { sha: "treesha" } }), { status: 200 });
+    }
+    if (url.endsWith("/git/trees")) {
+      return new Response(JSON.stringify({ sha: "newtreesha" }), { status: 200 });
+    }
+    if (url.endsWith("/git/commits")) {
+      return new Response(JSON.stringify({ sha: "newcommit" }), { status: 200 });
+    }
+    throw new Error(`unexpected fetch to ${url}`);
+  });
+  return calls;
+}
+
+async function putRequest(env, body) {
+  return new Request("https://api.example.com/content", {
+    method: "PUT",
+    headers: { authorization: await bearer(env), "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+}
+
+test("PUT /content writes an allowed file and returns the new commit sha", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  mockCommitApi();
+  const response = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
+      baseCommitSha: "abc123",
+      message: "edit homepage"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).commitSha, "newcommit");
+});
+
+test("PUT /content rejects a disallowed path before calling GitHub", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  const calls = mockCommitApi();
+  const response = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "index.html", contentBase64: btoa("<h1>hi</h1>") }],
+      baseCommitSha: "abc123",
+      message: "sneaky"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 400);
+  assert.equal(calls.length, 0);
+});
+
+test("PUT /content rejects the whole batch if any one path is disallowed", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  const calls = mockCommitApi();
+  const response = await worker.fetch(
+    await putRequest(env, {
+      files: [
+        { path: "_data/site.json", contentBase64: btoa("{}") },
+        { path: "main.js", contentBase64: btoa("evil()") }
+      ],
+      baseCommitSha: "abc123",
+      message: "mixed"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 400);
+  assert.equal(calls.length, 0);
+});
+
+test("PUT /content returns 409 when the base commit is stale", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  mockCommitApi({ headSha: "somethingelse" });
+  const response = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
+      baseCommitSha: "abc123",
+      message: "stale"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 409);
+});
+
+test("PUT /content without a session returns 401 and calls no GitHub API", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  const calls = mockCommitApi();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/content", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ files: [], baseCommitSha: "abc123", message: "x" })
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 401);
+  assert.equal(calls.length, 0);
+});
+
+test("PUT /content with a missing GitHub secret returns 500, not 502, and writes nothing", async () => {
+  const env = githubEnv();
+  delete env.GITHUB_APP_ID;
+  const calls = mockCommitApi();
+  const response = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
+      baseCommitSha: "abc123",
+      message: "edit homepage"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 500);
+  const body = await response.json();
+  assert.doesNotMatch(body.error, /GITHUB_APP_ID/);
+  assert.equal(calls.length, 0);
 });
