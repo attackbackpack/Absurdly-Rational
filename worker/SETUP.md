@@ -33,8 +33,9 @@ contains this `worker/` directory).
 4. **Generate a private key** on the same page. A `.pem` file downloads. This file is the
    credential — do not commit it, do not paste it into a chat, and delete the download once it
    is in the Worker secret (step 8).
-5. **Install the app** on `attackbackpack/Absurdly-Rational` only. After installing, the browser
-   URL ends in `/installations/<number>` — record that number as the Installation ID.
+5. **Install the app.** On the app's own settings page, click **Install App** in the left
+   sidebar, then install it on `attackbackpack/Absurdly-Rational` only. After installing, the
+   browser URL ends in `/installations/<number>` — record that number as the Installation ID.
 6. **Log in to Cloudflare**, if this computer hasn't done so before:
 
    ```bash
@@ -45,7 +46,7 @@ contains this `worker/` directory).
 7. **Create the KV namespace:**
 
    ```bash
-   npx wrangler kv namespace create RATE_LIMIT
+   npx wrangler kv namespace create RATE_LIMIT --config worker/wrangler.toml
    ```
 
    Copy the printed `id` into `worker/wrangler.toml`, replacing the placeholder on the `id =`
@@ -95,9 +96,9 @@ contains this `worker/` directory).
 
    and paste the output as the secret value. `GITHUB_REPO` is `attackbackpack/Absurdly-Rational`.
    For `GITHUB_APP_PRIVATE_KEY`, open the downloaded `.pem` file in a text editor and paste its
-   entire contents — including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`
-   lines — as the secret value. Once this secret is set, delete the `.pem` file from Downloads;
-   it should not remain on disk anywhere.
+   entire contents — the whole file, including its first and last header lines — as the secret
+   value. Once this secret is set, delete the `.pem` file from Downloads; it should not remain on
+   disk anywhere.
 9. **Deploy:**
 
    ```bash
