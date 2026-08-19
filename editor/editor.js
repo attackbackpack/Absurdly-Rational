@@ -1,7 +1,7 @@
 import { createApi } from "./lib/api.js";
 import { createDraft } from "./lib/draft.js";
 import { attachOverlay } from "./lib/overlay.js";
-import { openImagePanel, openSettingsPanel } from "./lib/panels.js";
+import { openImagePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
 
 const api = createApi(document.body.dataset.api);
 const previewUrl = new URLSearchParams(location.search).get("preview") || "/preview/index.html";
@@ -51,7 +51,18 @@ form.addEventListener("submit", async (event) => {
   errorBox.hidden = true;
   try {
     await api.login(document.getElementById("password").value);
-    await start();
+    if (draft && draft.isDirty()) {
+      // A prior save hit a 401 mid-edit (see the save handler below), which
+      // deliberately left `draft`/`overlay`/the iframe untouched so the edit
+      // survives re-authentication. Re-running start() here would discard all
+      // of that and silently lose the edit — just restore the workspace view.
+      signin.hidden = true;
+      workspace.hidden = false;
+      onDirty();
+      setStatus("Signed in again — your unsaved changes are still here. Press Save to continue.");
+    } else {
+      await start();
+    }
   } catch (error) {
     errorBox.textContent = error.message;
     errorBox.hidden = false;
@@ -65,6 +76,11 @@ document.getElementById("settings-button").addEventListener("click", () => {
 });
 
 saveButton.addEventListener("click", async () => {
+  // A panel left open keeps writing into whatever `draft` object it closed
+  // over at open time; after a successful save that object is replaced out
+  // from under it, so any further panel edits would silently vanish. Saving
+  // is a document-level action — close the panel first.
+  closePanel();
   if (!draft || !draft.isDirty()) return;
   saveButton.disabled = true;
   setStatus("Saving…");
@@ -76,13 +92,17 @@ saveButton.addEventListener("click", async () => {
       setStatus("Someone else changed the draft. Reload the page before saving again.");
       saveButton.disabled = false;
     } else if (error.status === 401) {
-      // The save itself never went through, so the draft is genuinely unsaved —
-      // say so rather than implying the edit is safe on the server.
+      // The save itself never went through, so it is genuinely unsaved — but
+      // `draft`/`overlay`/the iframe are deliberately left untouched (not
+      // reset, not discarded) so the edit survives re-authentication. The
+      // sign-in handler above checks for a dirty draft and skips start() so
+      // it stays that way.
       setStatus("");
       sessionStorage.clear();
       signin.hidden = false;
       workspace.hidden = true;
-      errorBox.textContent = "Your session expired. This change was not saved — sign in again to continue editing.";
+      errorBox.textContent =
+        "Your session expired. This change was not saved yet, but your edits are still here — sign in again to save them.";
       errorBox.hidden = false;
     } else {
       setStatus(error.message);

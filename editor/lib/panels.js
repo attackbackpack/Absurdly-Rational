@@ -10,6 +10,11 @@ const SEO_FIELDS = [
   ["site:home.seo.twitter_description", "Twitter description"]
 ];
 
+export function closePanel() {
+  const root = document.getElementById("ar-panel");
+  if (root) root.remove();
+}
+
 function panelRoot() {
   let root = document.getElementById("ar-panel");
   if (root) root.remove();
