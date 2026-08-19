@@ -120,6 +120,119 @@ async function handleAuth(request, env) {
   });
 }
 
+const GITHUB_API = "https://api.github.com";
+const BRANCH = "editor";
+const USER_AGENT = "absurdly-rational-editor";
+
+function pemToArrayBuffer(pem) {
+  const body = pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+async function appJwt(env) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(encoder.encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
+  const claims = base64url(
+    encoder.encode(JSON.stringify({ iat: now - 60, exp: now + 540, iss: env.GITHUB_APP_ID }))
+  );
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    pemToArrayBuffer(env.GITHUB_APP_PRIVATE_KEY),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    encoder.encode(`${header}.${claims}`)
+  );
+  return `${header}.${claims}.${base64url(signature)}`;
+}
+
+let cachedToken = { value: null, expiresAt: 0 };
+
+async function installationToken(env) {
+  if (env.__installationToken) return env.__installationToken;
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedToken.value && cachedToken.expiresAt > now + 60) return cachedToken.value;
+
+  const response = await fetch(
+    `${GITHUB_API}/app/installations/${env.GITHUB_INSTALLATION_ID}/access_tokens`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${await appJwt(env)}`,
+        accept: "application/vnd.github+json",
+        "user-agent": USER_AGENT
+      }
+    }
+  );
+  if (!response.ok) throw new Error(`installation token request failed: ${response.status}`);
+  const body = await response.json();
+  cachedToken = { value: body.token, expiresAt: now + 55 * 60 };
+  return cachedToken.value;
+}
+
+async function github(env, pathname, init = {}) {
+  const token = await installationToken(env);
+  const response = await fetch(`${GITHUB_API}/repos/${env.GITHUB_REPO}${pathname}`, {
+    ...init,
+    headers: {
+      authorization: `Bearer ${token}`,
+      accept: "application/vnd.github+json",
+      "user-agent": USER_AGENT,
+      ...(init.body ? { "content-type": "application/json" } : {}),
+      ...init.headers
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`GitHub ${init.method || "GET"} ${pathname} failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function authorize(request, env) {
+  const header = request.headers.get("authorization") || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  return verifySession(env.SESSION_SECRET, token);
+}
+
+async function handleGetContent(request, env) {
+  const configError = requireSecrets(env, request, [
+    "SESSION_SECRET",
+    "GITHUB_APP_ID",
+    "GITHUB_APP_PRIVATE_KEY",
+    "GITHUB_INSTALLATION_ID",
+    "GITHUB_REPO"
+  ]);
+  if (configError) return configError;
+
+  if (!(await authorize(request, env))) {
+    return json(env, request, 401, { error: "Sign in again." });
+  }
+  try {
+    const ref = await github(env, `/git/ref/heads/${BRANCH}`);
+    const file = await github(env, `/contents/_data/site.json?ref=${BRANCH}`);
+    const decoded = decodeURIComponent(
+      Array.from(atob(file.content.replace(/\n/g, "")))
+        .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`)
+        .join("")
+    );
+    return json(env, request, 200, {
+      site: JSON.parse(decoded),
+      baseCommitSha: ref.object.sha
+    });
+  } catch (error) {
+    return json(env, request, 502, { error: `Could not read the site content. ${error.message}` });
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -129,6 +242,9 @@ export default {
     }
     if (url.pathname === "/auth" && request.method === "POST") {
       return handleAuth(request, env);
+    }
+    if (url.pathname === "/content" && request.method === "GET") {
+      return handleGetContent(request, env);
     }
     return json(env, request, 404, { error: "Not found" });
   }
