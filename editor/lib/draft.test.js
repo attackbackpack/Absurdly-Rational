@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createDraft, safeUploadName } from "./draft.js";
+import {
+  createDraft,
+  safeUploadName,
+  uploadRejection,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_DIMENSION
+} from "./draft.js";
 
 const site = () => ({
   home: {
@@ -142,4 +148,119 @@ test("stageUpload: cleaned-name collisions are deduped and each staged path sati
   assert.ok(paths.includes(a));
   assert.ok(paths.includes(b));
   assert.ok(paths.includes(c));
+});
+
+// --- Interior dot runs: the Worker rejects any path containing "..", and it
+// rejects the whole batch, so one of these names would brick every later save.
+
+const ALLOWED_UPLOAD_PATH = /^assets\/uploads\/[A-Za-z0-9._-]+$/;
+
+test("safeUploadName: a doubled interior dot is collapsed", () => {
+  assert.equal(safeUploadName("v1..final.jpg"), "v1.final.jpg");
+  assert.equal(safeUploadName("a.b..c.webp"), "a.b.c.webp");
+});
+
+test("safeUploadName: long dot runs collapse to a single dot", () => {
+  assert.equal(safeUploadName("a....b.png"), "a.b.png");
+});
+
+test("safeUploadName: no cleaned name contains a traversal-shaped run", () => {
+  const names = ["v1..final.jpg", "a.b..c.webp", "a....b.png", "....png", "..", "a..", "..a.jpg"];
+  for (const name of names) {
+    const cleaned = safeUploadName(name);
+    assert.ok(!cleaned.includes(".."), `${name} → ${cleaned} still contains ".."`);
+    assert.match(`assets/uploads/${cleaned}`, ALLOWED_UPLOAD_PATH);
+  }
+});
+
+test("stageUpload: a dotted name stages at a path the Worker allowlist accepts", () => {
+  const draft = createDraft(site(), "abc");
+  const staged = draft.stageUpload("v1..final.jpg", btoa("bytes"));
+  assert.equal(staged, "assets/uploads/v1.final.jpg");
+  assert.ok(!staged.includes(".."));
+  assert.match(staged, ALLOWED_UPLOAD_PATH);
+});
+
+// --- uploadRejection mirrors scripts/validate-content.js. Every case below is
+// a file that reaches the repository and fails CI if it is not caught here.
+
+test("uploadRejection accepts an ordinary photo", () => {
+  assert.equal(uploadRejection({ name: "rooster.jpg", size: 900000, width: 1600, height: 1200 }), null);
+});
+
+test("uploadRejection accepts every allowed extension, case-insensitively", () => {
+  for (const extension of ["JPG", "jpeg", "PNG", "webp"]) {
+    assert.equal(
+      uploadRejection({ name: `photo.${extension}`, size: 1000, width: 100, height: 100 }),
+      null,
+      extension
+    );
+  }
+});
+
+test("uploadRejection rejects an iPhone HEIC by extension", () => {
+  const problem = uploadRejection({ name: "IMG_1234.HEIC", size: 2000000, width: 4032, height: 3024 });
+  assert.match(problem, /JPG, PNG, or WebP/);
+});
+
+test("uploadRejection rejects a file with no extension at all", () => {
+  assert.match(uploadRejection({ name: "photo", size: 1000, width: 100, height: 100 }), /JPG, PNG, or WebP/);
+});
+
+test("uploadRejection rejects a name that cleaning leaves extensionless", () => {
+  // safeUploadName("....png") is "png" — the committed file would have no
+  // extension and validateAssetFile would fail on it.
+  assert.equal(safeUploadName("....png"), "png");
+  assert.match(uploadRejection({ name: "....png", size: 1000, width: 100, height: 100 }), /JPG, PNG, or WebP/);
+});
+
+test("uploadRejection rejects a file over the 10 MB limit and names the limit", () => {
+  const problem = uploadRejection({
+    name: "big.png",
+    size: MAX_UPLOAD_BYTES + 1,
+    width: 100,
+    height: 100
+  });
+  assert.match(problem, /10 MB/);
+});
+
+test("uploadRejection accepts a file exactly at the 10 MB limit", () => {
+  assert.equal(
+    uploadRejection({ name: "big.png", size: MAX_UPLOAD_BYTES, width: 100, height: 100 }),
+    null
+  );
+});
+
+test("uploadRejection rejects a 48MP phone photo by dimensions", () => {
+  const problem = uploadRejection({ name: "IMG_9999.jpg", size: 9000000, width: 8064, height: 6048 });
+  assert.match(problem, /8064×6048/);
+  assert.match(problem, new RegExp(String(MAX_UPLOAD_DIMENSION)));
+});
+
+test("uploadRejection rejects an image over the limit on either side alone", () => {
+  assert.ok(uploadRejection({ name: "a.jpg", size: 10, width: MAX_UPLOAD_DIMENSION + 1, height: 10 }));
+  assert.ok(uploadRejection({ name: "a.jpg", size: 10, width: 10, height: MAX_UPLOAD_DIMENSION + 1 }));
+  assert.equal(
+    uploadRejection({
+      name: "a.jpg",
+      size: 10,
+      width: MAX_UPLOAD_DIMENSION,
+      height: MAX_UPLOAD_DIMENSION
+    }),
+    null
+  );
+});
+
+test("uploadRejection reports a file that could not be decoded as an image", () => {
+  const problem = uploadRejection({ name: "broken.png", size: 1000, width: null, height: null });
+  assert.match(problem, /could not be read as an image/);
+});
+
+test("uploadRejection skips the dimension check when dimensions are unknown", () => {
+  assert.equal(uploadRejection({ name: "photo.png", size: 1000 }), null);
+});
+
+test("uploadRejection reports the extension problem before the size problem", () => {
+  const problem = uploadRejection({ name: "huge.heic", size: MAX_UPLOAD_BYTES * 3, width: null, height: null });
+  assert.match(problem, /JPG, PNG, or WebP/);
 });
