@@ -2,6 +2,10 @@
 * { box-sizing: border-box; }
 body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--ar-bg); color: var(--ar-text); }
 
+/* #signin/#workspace carry author `display` values that would otherwise beat
+   the `hidden` attribute's UA-stylesheet `display: none`, so make it explicit. */
+[hidden] { display: none !important; }
+
 #signin { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
 #signin-form { width: 100%; max-width: 380px; background: var(--ar-panel); padding: 32px; border-radius: 14px; }
 #signin-form h1 { margin: 0 0 8px; font-size: 24px; }
