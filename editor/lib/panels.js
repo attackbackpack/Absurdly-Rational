@@ -91,6 +91,31 @@ async function fileToBase64(file) {
   return btoa(binary);
 }
 
+/**
+ * The writes that make an image object complete enough for
+ * scripts/validate-content.js to judge it, given how the template renders it.
+ *
+ * validateImage only runs on an object carrying path, alt, fit and focus as own
+ * properties, and every image in _data/site.json ships with fit and focus but
+ * neither path nor alt. Without the seed, whether the alt-text gate ran at all
+ * depended on which controls the user happened to touch.
+ *
+ * `decorative` is how the TEMPLATE renders the slot (index.html passes
+ * decorative=true to _includes/image.html for door art). validateImage gates the
+ * alt requirement on the DATA field, which knows nothing about that — so a
+ * decorative slot must have decorative: true written into the data, or an
+ * uploaded door image would fail CI with no way to fix it from the panel, since
+ * the alt field is hidden precisely because it can never render.
+ */
+export function seedImageWrites(image, decorative) {
+  const writes = [];
+  for (const key of ["path", "alt"]) {
+    if (typeof image[key] !== "string") writes.push([key, ""]);
+  }
+  if (decorative && image.decorative !== true) writes.push(["decorative", true]);
+  return writes;
+}
+
 export function openImagePanel({ anchor, spec, draft, onDirty, decorative = false }) {
   const { root, close } = panelRoot();
   const box = document.createElement("div");
@@ -103,20 +128,13 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   // says), `image.decorative` from the content itself.
   const isDecorative = decorative || image.decorative === true;
 
-  // scripts/validate-content.js only runs validateImage on an object that has
-  // path, alt, fit and focus as own properties. Every image in _data/site.json
-  // ships with fit and focus but neither path nor alt, so whether the
-  // accessibility gate ran at all depended on which controls the user happened
-  // to touch — clearing the alt box created the key and failed CI, while never
-  // opening it let an image ship with no alt at all. Seed both to their current
-  // effective values so the gate is decided by the content, not the click order.
-  let seeded = false;
-  for (const key of ["path", "alt"]) {
-    if (typeof image[key] !== "string") {
-      draft.write(`${spec}.${key}`, "");
-      seeded = true;
+  // Applied by every handler that changes this slot — never on open, so that
+  // looking at an image and closing the panel leaves the draft clean.
+  const completeShape = () => {
+    for (const [key, value] of seedImageWrites(image, isDecorative)) {
+      draft.write(`${spec}.${key}`, value);
     }
-  }
+  };
 
   const heading = document.createElement("h2");
   heading.textContent = "Image";
@@ -175,6 +193,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
       reject(dimensions);
       return;
     }
+    completeShape();
     const repoPath = draft.stageUpload(file.name, await fileToBase64(file));
     draft.write(`${spec}.path`, repoPath);
     if (img) img.src = URL.createObjectURL(file);
@@ -195,6 +214,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   } else {
     box.appendChild(
       field("Alternative text (describe the image for screen readers)", image.alt, (value) => {
+        completeShape();
         draft.write(`${spec}.alt`, value);
         if (img) img.alt = value;
         onDirty();
@@ -204,6 +224,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
 
   box.appendChild(
     select("Image fit", FITS, image.fit || "cover", (value) => {
+      completeShape();
       draft.write(`${spec}.fit`, value);
       if (img) {
         img.classList.remove(...FITS.map(fitClass));
@@ -215,6 +236,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
 
   box.appendChild(
     select("Crop focus", FOCUSES, image.focus || "center", (value) => {
+      completeShape();
       draft.write(`${spec}.focus`, value);
       if (img) {
         img.classList.remove(...FOCUSES.map(focusClass));
@@ -230,8 +252,6 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   box.appendChild(done);
 
   present(root, box);
-  // Seeding is a real change to site.json, so the toolbar must say so.
-  if (seeded) onDirty();
 }
 
 export function openSettingsPanel({ draft, onDirty }) {

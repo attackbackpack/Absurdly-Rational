@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { seedImageWrites } from "../editor/lib/panels.js";
 
 // scripts/validate-content.js is a top-level script with no exports: requiring
 // it runs the whole validation against this repository's real _data. Rather
@@ -80,6 +81,73 @@ function validate({ site, uploads = {} }) {
     fs.rmSync(root, { recursive: true, force: true });
   }
 }
+
+// --- The exact documents the image panel produces, built from the real
+// _data/site.json, the real index.html, and the panel's own seeding helper.
+// Hand-written fixtures are what let the door-art regression through: they said
+// decorative: true while the panel produced decorative: false.
+
+const repoRoot = path.resolve(here, "..");
+const realSite = JSON.parse(fs.readFileSync(path.join(repoRoot, "_data", "site.json"), "utf8"));
+const indexHtml = fs.readFileSync(path.join(repoRoot, "index.html"), "utf8");
+
+/** The whole element carrying data-edit-image="<spec>" in index.html. */
+function editableImageTag(spec) {
+  const at = indexHtml.indexOf(`data-edit-image="${spec}"`);
+  assert.notEqual(at, -1, `index.html has no data-edit-image="${spec}"`);
+  return indexHtml.slice(indexHtml.lastIndexOf("<", at), indexHtml.indexOf(">", at) + 1);
+}
+
+/** How editor.js reads decorativeness: the presence of the boolean attribute. */
+const rendersDecorative = (spec) => editableImageTag(spec).includes("data-edit-image-decorative");
+
+const DOOR_SPEC = "site:home.formats[key={{ format.key }}].image";
+const HERO_SPEC = "site:home.hero.image";
+
+/** What openImagePanel's file-picker handler leaves in the draft. */
+function afterUpload(image, decorative, repoPath) {
+  const result = JSON.parse(JSON.stringify(image));
+  for (const [key, value] of seedImageWrites(result, decorative)) {
+    result[key] = value;
+  }
+  result.path = repoPath;
+  return result;
+}
+
+test("index.html marks the door art decorative and the hero not", () => {
+  // Both assertions below depend on this, so state it rather than assume it.
+  assert.equal(rendersDecorative(DOOR_SPEC), true);
+  assert.equal(rendersDecorative(HERO_SPEC), false);
+});
+
+test("a door upload with no alt text passes the real validator", () => {
+  const decorative = rendersDecorative(DOOR_SPEC);
+  const formats = realSite.home.formats.map((format, index) =>
+    index === 0
+      ? { ...format, image: afterUpload(format.image, decorative, "assets/uploads/door.png") }
+      : format
+  );
+  // The panel hides the alt field for this slot, so CI must not demand alt text
+  // for it — there would be no way to supply it.
+  assert.equal(formats[0].image.decorative, true);
+  assert.equal(formats[0].image.alt, "");
+  const result = validate({ site: baseSite({ formats }), uploads: { "door.png": ONE_PIXEL_PNG } });
+  assert.ok(result.ok, result.output);
+});
+
+test("a hero upload with no alt text still fails the real validator", () => {
+  const image = afterUpload(realSite.home.hero.image, rendersDecorative(HERO_SPEC), "assets/uploads/hero.png");
+  // The accessibility gate on meaningful images must not be weakened by the
+  // door-art fix: the panel shows an alt field here, so CI may demand one.
+  assert.equal(image.decorative, false);
+  assert.equal(image.alt, "");
+  const result = validate({
+    site: baseSite({ hero: { image } }),
+    uploads: { "hero.png": ONE_PIXEL_PNG }
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /provide alt text for a meaningful local image/);
+});
 
 // --- The shape the image panel seeds (path and alt as own properties) ---
 
