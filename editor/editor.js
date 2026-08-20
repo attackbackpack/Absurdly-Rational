@@ -2,9 +2,10 @@ import { createApi } from "./lib/api.js";
 import { createDraft } from "./lib/draft.js";
 import { attachOverlay } from "./lib/overlay.js";
 import { openImagePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
+import { resolvePreviewPath } from "./lib/preview.js";
 
 const api = createApi(document.body.dataset.api);
-const previewUrl = new URLSearchParams(location.search).get("preview") || "/preview/index.html";
+const previewUrl = resolvePreviewPath(new URLSearchParams(location.search).get("preview"));
 
 const signin = document.getElementById("signin");
 const form = document.getElementById("signin-form");
@@ -28,7 +29,15 @@ function onDirty() {
 }
 
 function onImageClick(anchor, spec) {
-  openImagePanel({ anchor, spec, draft, onDirty });
+  // The template, not the data, decides that door art is decorative — it passes
+  // decorative=true to _includes/image.html — so it also has to say so here.
+  openImagePanel({
+    anchor,
+    spec,
+    draft,
+    onDirty,
+    decorative: anchor.hasAttribute("data-edit-image-decorative")
+  });
 }
 
 async function start() {
@@ -38,6 +47,7 @@ async function start() {
   const content = await api.loadContent();
   draft = createDraft(content.site, content.baseCommitSha);
   frame.addEventListener("load", () => {
+    if (!draft) return;
     if (overlay) overlay.detach();
     overlay = attachOverlay({ frame, draft, onDirty, onImageClick });
     onDirty();
@@ -46,32 +56,68 @@ async function start() {
   frame.src = previewUrl;
 }
 
+// Only a 401 means "your password was wrong" or "your session ended". A 500
+// (Worker misconfigured) or a 502 (GitHub said no — including the editor branch
+// not existing yet) is a server problem, and showing it under the password box
+// tells the user to retype a password that was never the issue.
+function showLoadFailure(error) {
+  if (error.status === 401) {
+    sessionStorage.clear();
+    errorBox.textContent = error.message;
+    errorBox.hidden = false;
+    signin.hidden = false;
+    workspace.hidden = true;
+    return;
+  }
+  signin.hidden = true;
+  workspace.hidden = false;
+  saveButton.disabled = true;
+  setStatus(`${error.message} Nothing can be edited until that is fixed.`);
+  // Content never loaded, so there is no draft and no overlay. Show the site
+  // read-only rather than leaving a blank workspace behind the message.
+  if (!frame.getAttribute("src")) frame.src = previewUrl;
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   errorBox.hidden = true;
   try {
     await api.login(document.getElementById("password").value);
-    if (draft && draft.isDirty()) {
-      // A prior save hit a 401 mid-edit (see the save handler below), which
-      // deliberately left `draft`/`overlay`/the iframe untouched so the edit
-      // survives re-authentication. Re-running start() here would discard all
-      // of that and silently lose the edit — just restore the workspace view.
-      signin.hidden = true;
-      workspace.hidden = false;
-      onDirty();
-      setStatus("Signed in again — your unsaved changes are still here. Press Save to continue.");
-    } else {
-      await start();
-    }
   } catch (error) {
+    // A failure of the sign-in request itself belongs on the sign-in form:
+    // wrong password (401), too many attempts (429), Worker misconfigured (500).
     errorBox.textContent = error.message;
     errorBox.hidden = false;
     signin.hidden = false;
     workspace.hidden = true;
+    return;
+  }
+
+  if (draft && draft.isDirty()) {
+    // A prior save hit a 401 mid-edit (see the save handler below), which
+    // deliberately left `draft`/`overlay`/the iframe untouched so the edit
+    // survives re-authentication. Re-running start() here would discard all
+    // of that and silently lose the edit — just restore the workspace view.
+    signin.hidden = true;
+    workspace.hidden = false;
+    onDirty();
+    setStatus("Signed in again — your unsaved changes are still here. Press Save to continue.");
+    return;
+  }
+
+  // The password was accepted. Anything that goes wrong from here is a content
+  // load problem, and must not be reported as a bad password.
+  try {
+    await start();
+  } catch (error) {
+    showLoadFailure(error);
   }
 });
 
 document.getElementById("settings-button").addEventListener("click", () => {
+  // The workspace can now be on screen with no draft behind it: showLoadFailure
+  // keeps it visible so a server error is readable. There is nothing to edit.
+  if (!draft) return;
   openSettingsPanel({ draft, onDirty });
 });
 
@@ -142,10 +188,5 @@ window.addEventListener("beforeunload", (event) => {
 });
 
 if (api.hasSession()) {
-  start().catch((error) => {
-    errorBox.textContent = error.message;
-    errorBox.hidden = false;
-    signin.hidden = false;
-    workspace.hidden = true;
-  });
+  start().catch(showLoadFailure);
 }
