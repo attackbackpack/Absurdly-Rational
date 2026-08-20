@@ -3,7 +3,7 @@ const OVERLAY_STYLE = `
 [data-edit]:hover { outline: 2px dashed rgba(111,123,255,.9); }
 [data-edit-image] { cursor: pointer; }
 [data-edit-image]:hover { outline: 2px dashed rgba(111,123,255,.9); }
-[data-edit][contenteditable="plaintext-only"] { outline: 2px solid rgba(111,123,255,1); background: rgba(111,123,255,.08); }
+[data-edit]:focus { outline: 2px solid rgba(111,123,255,1); background: rgba(111,123,255,.08); }
 `;
 
 export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
