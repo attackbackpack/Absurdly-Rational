@@ -192,7 +192,9 @@ async function github(env, pathname, init = {}) {
     }
   });
   if (!response.ok) {
-    throw new Error(`GitHub ${init.method || "GET"} ${pathname} failed: ${response.status}`);
+    const error = new Error(`GitHub ${init.method || "GET"} ${pathname} failed: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 }
@@ -232,6 +234,8 @@ async function handleGetContent(request, env) {
     return json(env, request, 502, { error: `Could not read the site content. ${error.message}` });
   }
 }
+
+const CONFLICT_MESSAGE = "Someone else changed the draft while you were editing. Reload before saving.";
 
 const ALLOWED_PATHS = [/^_data\/[a-z-]+\.json$/, /^assets\/uploads\/[A-Za-z0-9._-]+$/];
 
@@ -282,9 +286,7 @@ async function handlePutContent(request, env) {
   try {
     const ref = await github(env, `/git/ref/heads/${BRANCH}`);
     if (ref.object.sha !== payload.baseCommitSha) {
-      return json(env, request, 409, {
-        error: "Someone else changed the draft while you were editing. Reload before saving."
-      });
+      return json(env, request, 409, { error: CONFLICT_MESSAGE });
     }
 
     const blobs = [];
@@ -309,10 +311,21 @@ async function handlePutContent(request, env) {
         parents: [ref.object.sha]
       })
     });
-    await github(env, `/git/refs/heads/${BRANCH}`, {
-      method: "PATCH",
-      body: JSON.stringify({ sha: commit.sha })
-    });
+    try {
+      await github(env, `/git/refs/heads/${BRANCH}`, {
+        method: "PATCH",
+        body: JSON.stringify({ sha: commit.sha })
+      });
+    } catch (error) {
+      // No `force`, so GitHub requires a fast-forward and answers 422 when the
+      // ref moved between the read above and this write. That is the same
+      // conflict as a stale baseCommitSha, not a server fault — report it the
+      // same way so the client shows the reload-and-retry copy.
+      if (error.status === 422) {
+        return json(env, request, 409, { error: CONFLICT_MESSAGE });
+      }
+      throw error;
+    }
 
     return json(env, request, 200, { commitSha: commit.sha });
   } catch (error) {

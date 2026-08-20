@@ -333,7 +333,7 @@ test("the .. guard rejects traversal-shaped filenames the regex alone would allo
   assert.equal(isAllowedPath("assets/uploads/a..b"), false);
 });
 
-function mockCommitApi({ headSha = "abc123" } = {}) {
+function mockCommitApi({ headSha = "abc123", refUpdateStatus = 200 } = {}) {
   const calls = [];
   mock.method(globalThis, "fetch", async (input, init = {}) => {
     const url = String(input.url ?? input);
@@ -345,6 +345,11 @@ function mockCommitApi({ headSha = "abc123" } = {}) {
     if (url.includes("/git/ref/heads") || url.includes("/git/refs/heads")) {
       if ((init.method || "GET") === "GET") {
         return new Response(JSON.stringify({ object: { sha: headSha } }), { status: 200 });
+      }
+      if (refUpdateStatus !== 200) {
+        return new Response(JSON.stringify({ message: "Update is not a fast forward" }), {
+          status: refUpdateStatus
+        });
       }
       return new Response(JSON.stringify({ object: { sha: "newcommit" } }), { status: 200 });
     }
@@ -550,6 +555,68 @@ test("PUT /content returns 409 when the base commit is stale", async () => {
   );
   mock.restoreAll();
   assert.equal(response.status, 409);
+});
+
+test("PUT /content maps a non-fast-forward ref update to 409, not 502", async () => {
+  // The ref passed the stale check but moved before the PATCH landed. GitHub
+  // refuses the non-fast-forward update with 422; that is a conflict the user
+  // can resolve by reloading, not a server fault.
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  mockCommitApi({ refUpdateStatus: 422 });
+  const response = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
+      baseCommitSha: "abc123",
+      message: "race"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 409);
+  assert.match((await response.json()).error, /Reload before saving/);
+});
+
+test("PUT /content still reports other GitHub failures on the ref update as 502", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  mockCommitApi({ refUpdateStatus: 500 });
+  const response = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
+      baseCommitSha: "abc123",
+      message: "boom"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 502);
+});
+
+test("the stale-baseCommitSha 409 and the ref-race 409 say the same thing", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  mockCommitApi({ headSha: "somethingelse" });
+  const stale = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
+      baseCommitSha: "abc123",
+      message: "stale"
+    }),
+    env
+  );
+  mock.restoreAll();
+  mockCommitApi({ refUpdateStatus: 422 });
+  const race = await worker.fetch(
+    await putRequest(env, {
+      files: [{ path: "_data/site.json", contentBase64: btoa("{}") }],
+      baseCommitSha: "abc123",
+      message: "race"
+    }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal((await stale.json()).error, (await race.json()).error);
 });
 
 test("PUT /content without a session returns 401 and calls no GitHub API", async () => {
