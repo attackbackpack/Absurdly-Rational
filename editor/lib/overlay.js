@@ -28,6 +28,17 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
     node.setAttribute("contenteditable", "plaintext-only");
     node.setAttribute("spellcheck", "true");
 
+    // The text as it stood when this field was last entered. Escape restores
+    // it; reading the draft back instead would return whatever the input
+    // handler below has already written, which is the typing being abandoned.
+    let textOnFocus = null;
+    let abandoned = false;
+
+    on(node, "focus", () => {
+      textOnFocus = node.textContent;
+      abandoned = false;
+    });
+
     on(node, "input", () => {
       draft.write(node.dataset.edit, node.textContent);
       onDirty();
@@ -60,12 +71,24 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
         node.blur();
       }
       if (event.key === "Escape") {
-        node.textContent = draft.read(node.dataset.edit);
+        if (textOnFocus !== null) {
+          abandoned = true;
+          node.textContent = textOnFocus;
+          draft.write(node.dataset.edit, textOnFocus);
+        }
         node.blur();
+        onDirty();
       }
     });
 
     on(node, "blur", () => {
+      // Escape already restored and re-wrote the pre-edit text; letting the
+      // normal blur path run would write the abandoned text straight back.
+      if (abandoned) {
+        abandoned = false;
+        textOnFocus = null;
+        return;
+      }
       const text = node.textContent.replace(/\s+/g, " ").trim();
       node.textContent = text;
       draft.write(node.dataset.edit, text);
