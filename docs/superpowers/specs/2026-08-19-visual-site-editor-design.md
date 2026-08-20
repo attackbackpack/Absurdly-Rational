@@ -197,7 +197,13 @@ signs an RS256 JWT, exchanges it for an installation access token, and caches th
 memory for 55 minutes.
 
 **Brute-force protection.** A Cloudflare KV namespace counts failed `POST /auth` attempts
-per IP, capped at 10 per hour.
+per IP and refuses the request once the stored count reaches 10. The counter is a
+read-modify-write over a store with no atomicity and up to 60s of propagation delay, so it
+is not a hard cap: requests issued in parallel can all read the same count and all write
+back the same increment. It throttles serial guessing, which is what a person or a simple
+script does; it does not stop a parallel attack. The blast radius if it is beaten is a
+draft branch of an already-public repository, so this is deliberate rather than a gap to
+close with a distributed counter.
 
 ## Security boundary
 
