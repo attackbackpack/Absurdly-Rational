@@ -26,16 +26,16 @@ permalink: /index.html
       </div>
       <div class="home-hero-copy">
         <h1><span data-edit="site:home.hero.title_line_one">{{ home.hero.title_line_one | escape }}</span><br><span data-edit="site:home.hero.title_line_two">{{ home.hero.title_line_two | escape }}</span></h1>
-        <p class="hero-thesis" data-edit="site:home.hero.thesis">{{ home.hero.thesis }}</p>
-        <p class="hero-description" data-edit="site:home.hero.description">{{ home.hero.description }}</p>
-        <a class="button button--light" href="{{ home.hero.cta_url }}"><span data-edit="site:home.hero.cta_label">{{ home.hero.cta_label }}</span><span class="link-arrow" aria-hidden="true"></span></a>
+        <p class="hero-thesis" data-edit="site:home.hero.thesis">{{ home.hero.thesis | escape }}</p>
+        <p class="hero-description" data-edit="site:home.hero.description">{{ home.hero.description | escape }}</p>
+        <a class="button button--light" href="{{ home.hero.cta_url }}"><span data-edit="site:home.hero.cta_label">{{ home.hero.cta_label | escape }}</span><span class="link-arrow" aria-hidden="true"></span></a>
       </div>
     </section>
 
     <section class="format-switchboard page-width" id="formats" aria-labelledby="format-title">
       <div class="section-heading">
-        <h2 id="format-title" data-edit="site:home.formats_intro.title">{{ home.formats_intro.title }}</h2>
-        <p data-edit="site:home.formats_intro.description">{{ home.formats_intro.description }}</p>
+        <h2 id="format-title" data-edit="site:home.formats_intro.title">{{ home.formats_intro.title | escape }}</h2>
+        <p data-edit="site:home.formats_intro.description">{{ home.formats_intro.description | escape }}</p>
       </div>
       <div class="format-doors">
         {% for format in home.formats %}
@@ -47,7 +47,7 @@ permalink: /index.html
           {% endcase %}
         <a class="format-door format-door--{{ format_class }}" href="{{ format.url | relative_url }}">
           {% assign door_image_path = format.image.path | default: "" %}
-          <span class="door-art door-art--{{ format_class }}{% if door_image_path != empty %} door-art--image{% endif %}" data-edit-image="site:home.formats[key={{ format.key }}].image" aria-hidden="true">
+          <span class="door-art door-art--{{ format_class }}{% if door_image_path != empty %} door-art--image{% endif %}" data-edit-image="site:home.formats[key={{ format.key }}].image" data-edit-image-decorative aria-hidden="true">
             {% if door_image_path != empty %}
               {% include image.html image=format.image decorative=true class_name="door-image-object" %}
             {% elsif format_class == "readings" %}
@@ -59,9 +59,9 @@ permalink: /index.html
             {% endif %}
           </span>
           <span class="door-copy">
-            <h3 data-edit="site:home.formats[key={{ format.key }}].title">{{ format.title }}</h3>
-            <p data-edit="site:home.formats[key={{ format.key }}].description">{{ format.description }}</p>
-            <span class="door-meta"><span data-edit="site:home.formats[key={{ format.key }}].meta">{{ format.meta }}</span> <span class="link-arrow" aria-hidden="true"></span></span>
+            <h3 data-edit="site:home.formats[key={{ format.key }}].title">{{ format.title | escape }}</h3>
+            <p data-edit="site:home.formats[key={{ format.key }}].description">{{ format.description | escape }}</p>
+            <span class="door-meta"><span data-edit="site:home.formats[key={{ format.key }}].meta">{{ format.meta | escape }}</span> <span class="link-arrow" aria-hidden="true"></span></span>
           </span>
         </a>
         {% endfor %}
@@ -70,12 +70,12 @@ permalink: /index.html
 
     <section class="home-context page-width" aria-labelledby="context-title">
       <div>
-        <h2 id="context-title" data-edit="site:home.context.title">{{ home.context.title }}</h2>
-        <p data-edit="site:home.context.description">{{ home.context.description }}</p>
+        <h2 id="context-title" data-edit="site:home.context.title">{{ home.context.title | escape }}</h2>
+        <p data-edit="site:home.context.description">{{ home.context.description | escape }}</p>
       </div>
       <div class="context-aside">
-        <p data-edit="site:home.context.aside">{{ home.context.aside }}</p>
-        <a class="text-link" href="{{ site.data.site.author.linkedin }}" target="_blank" rel="noopener noreferrer"><span data-edit="site:home.context.contact_label">{{ home.context.contact_label }}</span><span class="link-arrow" aria-hidden="true"></span></a>
+        <p data-edit="site:home.context.aside">{{ home.context.aside | escape }}</p>
+        <a class="text-link" href="{{ site.data.site.author.linkedin }}" target="_blank" rel="noopener noreferrer"><span data-edit="site:home.context.contact_label">{{ home.context.contact_label | escape }}</span><span class="link-arrow" aria-hidden="true"></span></a>
       </div>
     </section>
   </main>
