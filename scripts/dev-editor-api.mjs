@@ -86,6 +86,20 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (pathname === "/" && req.method === "GET") {
+    res.writeHead(200, { "content-type": "text/plain; charset=utf-8", ...corsHeaders(origin) });
+    res.end(
+      `This is the local dev stand-in API for the visual site editor.\n` +
+        `It has no web page of its own — open the editor at:\n` +
+        `  http://localhost:4000/editor/?preview=/index.html\n\n` +
+        `Endpoints served here:\n` +
+        `  POST /auth      sign in, returns a session token\n` +
+        `  GET  /content   fetch current draft content (requires session)\n` +
+        `  PUT  /content   save draft content (requires session)\n`
+    );
+    return;
+  }
+
   if (pathname === "/auth" && req.method === "POST") {
     let payload = {};
     try {
@@ -144,6 +158,16 @@ const server = http.createServer(async (req, res) => {
   }
 
   sendJson(res, origin, 404, { error: "Not found" });
+});
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(
+      `[dev-editor-api] port ${PORT} is already in use. Clear it with: lsof -ti :${PORT} | xargs kill -9`
+    );
+    process.exit(1);
+  }
+  throw error;
 });
 
 server.listen(PORT, () => {

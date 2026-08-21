@@ -3,9 +3,13 @@ import { createDraft } from "./lib/draft.js";
 import { attachOverlay } from "./lib/overlay.js";
 import { openImagePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
 import { resolvePreviewPath } from "./lib/preview.js";
+import { resolveApiBase } from "./lib/apibase.js";
 
-const api = createApi(document.body.dataset.api);
-const previewUrl = resolvePreviewPath(new URLSearchParams(location.search).get("preview"));
+const searchParams = new URLSearchParams(location.search);
+const api = createApi(
+  resolveApiBase(location.hostname, document.body.dataset.api, searchParams.get("apiPort"))
+);
+const previewUrl = resolvePreviewPath(searchParams.get("preview"));
 
 const signin = document.getElementById("signin");
 const form = document.getElementById("signin-form");

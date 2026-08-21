@@ -23,25 +23,18 @@ npm run dev:editor-api
 bundle exec jekyll serve --port 4000
 ```
 
-Then point the editor's static shell at the dev server instead of the deployed Worker. Open
-`editor/index.html` and change the `data-api` attribute on `<body>`:
-
-```html
-<body data-api="http://localhost:8788">
-```
-
-Rebuild so the change is picked up:
-
-```bash
-bundle exec jekyll build
-```
-
 Open `http://localhost:4000/editor/?preview=/index.html` and sign in with `test-password`
 (or whatever you set via `DEV_EDITOR_PASSWORD` when starting the dev server).
 
-**Before committing anything, revert the `data-api` change in `editor/index.html`.** That
-attribute normally points at the deployed Worker in production — leaving it pointed at
-`localhost:8788` would break the real editor for anyone who isn't running this dev server.
+`http://localhost:8788` (the dev API you started in terminal 1) is an API with no page of its
+own — opening it directly in a browser is a natural way to check it's alive, but it will
+return a plain 404 for `/`. That's expected: it only serves `/auth` and `/content`. The page
+to open is always the `localhost:4000` editor URL above, not the API's own address.
+
+The editor automatically talks to `http://localhost:8788` whenever it's loaded from a local
+host like `localhost` — there is nothing to edit or revert in `editor/index.html`. The
+committed `data-api` attribute on `<body>` always points at the deployed Worker and is only
+ever meant to change when you substitute your own deployed Worker URL for production.
 
 What this level proves: the UI works — sign-in flow, hover states, click-to-edit, the image
 panel, save/error plumbing. What it does **not** prove: anything about GitHub, real
@@ -73,10 +66,13 @@ The `--var` override is needed because `worker/wrangler.toml` hardcodes
 `ALLOWED_ORIGIN = "https://absurdlyrational.com"` for production; without overriding it here,
 the local Worker's CORS check will reject requests from `http://localhost:4000`.
 
-Point `data-api` at `http://localhost:8787` the same way as level 1, rebuild, sign in with the
-real `EDITOR_PASSWORD`, and edit. Saves land as real commits on the `editor` branch of the
-repo the GitHub App is installed on — check GitHub afterward to confirm. Revert `data-api`
-before committing, same as level 1, and do not commit `worker/.dev.vars`.
+The real Worker listens on port 8787, not the dev stand-in's 8788, so tell the editor to use
+that port instead by adding `apiPort=8787` to the URL:
+`http://localhost:4000/editor/?preview=/index.html&apiPort=8787`. This only ever switches
+between the two known local Worker ports — there is still nothing to edit in `editor/index.html`
+and nothing to revert. Sign in with the real `EDITOR_PASSWORD` and edit. Saves land as real
+commits on the `editor` branch of the repo the GitHub App is installed on — check GitHub
+afterward to confirm. Do not commit `worker/.dev.vars`.
 
 This is the level that actually proves the GitHub write path, real authentication, and the
 edit-path allowlist.
@@ -104,6 +100,17 @@ Worker URL), merge to `main`, and confirm at `https://absurdlyrational.com/edito
 One thing that looks broken but isn't: adding a **first** image where built-in decorative
 artwork currently shows will not preview inline immediately — it only appears after a save and
 a rebuild of the site.
+
+## Troubleshooting
+
+- **`EADDRINUSE` on port 4000 or 8788.** Something is already listening there — probably a
+  server from an earlier session that never got stopped. Free the port and try again:
+  `lsof -ti :4000 | xargs kill -9` for Jekyll, or `lsof -ti :8788 | xargs kill -9` for the dev
+  editor API. `npm run dev:editor-api` now reports this itself instead of dumping a stack
+  trace; Jekyll's own port conflict message will point at 4000.
+- **`bundle exec jekyll serve` fails with a "cannot load such file" or similar gem error.**
+  `bundle install` hasn't been run yet in this checkout (or a Gemfile change hasn't been
+  picked up). Run `bundle install` from the repository root, then retry.
 
 ## A note on `docs/`
 
