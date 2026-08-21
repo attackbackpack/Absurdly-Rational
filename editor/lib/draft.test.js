@@ -1,0 +1,266 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  createDraft,
+  safeUploadName,
+  uploadRejection,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_DIMENSION
+} from "./draft.js";
+
+const site = () => ({
+  home: {
+    hero: { thesis: "old", image: { path: "", alt: "", fit: "contain", focus: "center" } },
+    formats: [{ key: "readings", title: "Selected Readings" }]
+  }
+});
+
+test("a fresh draft is not dirty", () => {
+  assert.equal(createDraft(site(), "abc").isDirty(), false);
+});
+
+test("read returns the current value", () => {
+  assert.equal(createDraft(site(), "abc").read("site:home.hero.thesis"), "old");
+});
+
+test("write marks the draft dirty and read reflects it", () => {
+  const draft = createDraft(site(), "abc");
+  draft.write("site:home.hero.thesis", "new");
+  assert.equal(draft.isDirty(), true);
+  assert.equal(draft.read("site:home.hero.thesis"), "new");
+});
+
+test("writing the same value back does not mark the draft dirty", () => {
+  const draft = createDraft(site(), "abc");
+  draft.write("site:home.hero.thesis", "old");
+  assert.equal(draft.isDirty(), false);
+});
+
+test("the draft never mutates the object it was given", () => {
+  const original = site();
+  const draft = createDraft(original, "abc");
+  draft.write("site:home.hero.thesis", "new");
+  assert.equal(original.home.hero.thesis, "old");
+});
+
+test("write works through an array key match", () => {
+  const draft = createDraft(site(), "abc");
+  draft.write("site:home.formats[key=readings].title", "Essays");
+  assert.equal(draft.read("site:home.formats[key=readings].title"), "Essays");
+});
+
+test("buildPayload is empty when nothing changed", () => {
+  assert.deepEqual(createDraft(site(), "abc").buildPayload("m").files, []);
+});
+
+test("buildPayload includes site.json once when a field changed", () => {
+  const draft = createDraft(site(), "abc");
+  draft.write("site:home.hero.thesis", "new");
+  const payload = draft.buildPayload("edit");
+  assert.equal(payload.files.length, 1);
+  assert.equal(payload.files[0].path, "_data/site.json");
+  assert.equal(payload.baseCommitSha, "abc");
+  assert.equal(payload.message, "edit");
+});
+
+test("buildPayload round-trips non-ASCII content through base64", () => {
+  const draft = createDraft(site(), "abc");
+  draft.write("site:home.hero.thesis", "Reality’s footnotes — better");
+  const encoded = draft.buildPayload("edit").files[0].contentBase64;
+  const decoded = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
+  assert.equal(decoded.home.hero.thesis, "Reality’s footnotes — better");
+});
+
+test("buildPayload matches the repository's existing JSON formatting", () => {
+  const draft = createDraft(site(), "abc");
+  draft.write("site:home.hero.thesis", "new");
+  const text = Buffer.from(draft.buildPayload("m").files[0].contentBase64, "base64").toString("utf8");
+  assert.equal(text.endsWith("\n"), false, "_data/site.json has no trailing newline");
+  assert.ok(text.includes('\n  "home"'), "two-space indent");
+});
+
+test("stageUpload records the file and returns its repository path", () => {
+  const draft = createDraft(site(), "abc");
+  const repoPath = draft.stageUpload("Rooster Photo.PNG", btoa("bytes"));
+  assert.match(repoPath, /^assets\/uploads\//);
+  assert.equal(draft.isDirty(), true);
+  const paths = draft.buildPayload("m").files.map((f) => f.path);
+  assert.ok(paths.includes(repoPath));
+});
+
+test("safeUploadName strips characters the Worker allowlist rejects", () => {
+  assert.equal(safeUploadName("Rooster Photo.PNG"), "rooster-photo.png");
+  assert.equal(safeUploadName("../../main.js"), "main.js");
+  assert.equal(safeUploadName("café pic!.jpg"), "caf-pic.jpg");
+});
+
+// --- Adversarial cases for safeUploadName, beyond the brief's three ---
+
+test("safeUploadName: extension-only name still satisfies the allowlist", () => {
+  const name = safeUploadName(".png");
+  assert.match(`assets/uploads/${name}`, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+});
+
+test("safeUploadName: name that cleans to empty still satisfies the allowlist", () => {
+  const name = safeUploadName("!!!");
+  assert.match(`assets/uploads/${name}`, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+});
+
+test("safeUploadName: double extension is preserved and safe", () => {
+  const name = safeUploadName("a.tar.gz");
+  assert.match(`assets/uploads/${name}`, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+});
+
+test("safeUploadName: very long name is still safe", () => {
+  const longName = "a".repeat(500) + ".png";
+  const name = safeUploadName(longName);
+  assert.match(`assets/uploads/${name}`, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+});
+
+test("safeUploadName: leading dot is stripped, still safe", () => {
+  const name = safeUploadName(".hidden-file.png");
+  assert.match(`assets/uploads/${name}`, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+});
+
+test("safeUploadName: windows-style backslash path is reduced to the basename", () => {
+  const name = safeUploadName("C:\\Users\\me\\Pictures\\photo.jpg");
+  assert.match(`assets/uploads/${name}`, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+  assert.ok(!name.includes("\\"));
+});
+
+test("safeUploadName: name of only separators still satisfies the allowlist", () => {
+  const name = safeUploadName("////\\\\\\");
+  assert.match(`assets/uploads/${name}`, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+});
+
+test("stageUpload: cleaned-name collisions are deduped and each staged path satisfies the allowlist", () => {
+  const draft = createDraft(site(), "abc");
+  const a = draft.stageUpload("Rooster Photo.PNG", btoa("one"));
+  const b = draft.stageUpload("rooster photo.png", btoa("two"));
+  const c = draft.stageUpload("ROOSTER PHOTO.PNG", btoa("three"));
+  assert.notEqual(a, b);
+  assert.notEqual(b, c);
+  assert.notEqual(a, c);
+  for (const p of [a, b, c]) {
+    assert.match(p, /^assets\/uploads\/[A-Za-z0-9._-]+$/);
+  }
+  const paths = draft.buildPayload("m").files.map((f) => f.path);
+  assert.ok(paths.includes(a));
+  assert.ok(paths.includes(b));
+  assert.ok(paths.includes(c));
+});
+
+// --- Interior dot runs: the Worker rejects any path containing "..", and it
+// rejects the whole batch, so one of these names would brick every later save.
+
+const ALLOWED_UPLOAD_PATH = /^assets\/uploads\/[A-Za-z0-9._-]+$/;
+
+test("safeUploadName: a doubled interior dot is collapsed", () => {
+  assert.equal(safeUploadName("v1..final.jpg"), "v1.final.jpg");
+  assert.equal(safeUploadName("a.b..c.webp"), "a.b.c.webp");
+});
+
+test("safeUploadName: long dot runs collapse to a single dot", () => {
+  assert.equal(safeUploadName("a....b.png"), "a.b.png");
+});
+
+test("safeUploadName: no cleaned name contains a traversal-shaped run", () => {
+  const names = ["v1..final.jpg", "a.b..c.webp", "a....b.png", "....png", "..", "a..", "..a.jpg"];
+  for (const name of names) {
+    const cleaned = safeUploadName(name);
+    assert.ok(!cleaned.includes(".."), `${name} → ${cleaned} still contains ".."`);
+    assert.match(`assets/uploads/${cleaned}`, ALLOWED_UPLOAD_PATH);
+  }
+});
+
+test("stageUpload: a dotted name stages at a path the Worker allowlist accepts", () => {
+  const draft = createDraft(site(), "abc");
+  const staged = draft.stageUpload("v1..final.jpg", btoa("bytes"));
+  assert.equal(staged, "assets/uploads/v1.final.jpg");
+  assert.ok(!staged.includes(".."));
+  assert.match(staged, ALLOWED_UPLOAD_PATH);
+});
+
+// --- uploadRejection mirrors scripts/validate-content.js. Every case below is
+// a file that reaches the repository and fails CI if it is not caught here.
+
+test("uploadRejection accepts an ordinary photo", () => {
+  assert.equal(uploadRejection({ name: "rooster.jpg", size: 900000, width: 1600, height: 1200 }), null);
+});
+
+test("uploadRejection accepts every allowed extension, case-insensitively", () => {
+  for (const extension of ["JPG", "jpeg", "PNG", "webp"]) {
+    assert.equal(
+      uploadRejection({ name: `photo.${extension}`, size: 1000, width: 100, height: 100 }),
+      null,
+      extension
+    );
+  }
+});
+
+test("uploadRejection rejects an iPhone HEIC by extension", () => {
+  const problem = uploadRejection({ name: "IMG_1234.HEIC", size: 2000000, width: 4032, height: 3024 });
+  assert.match(problem, /JPG, PNG, or WebP/);
+});
+
+test("uploadRejection rejects a file with no extension at all", () => {
+  assert.match(uploadRejection({ name: "photo", size: 1000, width: 100, height: 100 }), /JPG, PNG, or WebP/);
+});
+
+test("uploadRejection rejects a name that cleaning leaves extensionless", () => {
+  // safeUploadName("....png") is "png" — the committed file would have no
+  // extension and validateAssetFile would fail on it.
+  assert.equal(safeUploadName("....png"), "png");
+  assert.match(uploadRejection({ name: "....png", size: 1000, width: 100, height: 100 }), /JPG, PNG, or WebP/);
+});
+
+test("uploadRejection rejects a file over the 10 MB limit and names the limit", () => {
+  const problem = uploadRejection({
+    name: "big.png",
+    size: MAX_UPLOAD_BYTES + 1,
+    width: 100,
+    height: 100
+  });
+  assert.match(problem, /10 MB/);
+});
+
+test("uploadRejection accepts a file exactly at the 10 MB limit", () => {
+  assert.equal(
+    uploadRejection({ name: "big.png", size: MAX_UPLOAD_BYTES, width: 100, height: 100 }),
+    null
+  );
+});
+
+test("uploadRejection rejects a 48MP phone photo by dimensions", () => {
+  const problem = uploadRejection({ name: "IMG_9999.jpg", size: 9000000, width: 8064, height: 6048 });
+  assert.match(problem, /8064×6048/);
+  assert.match(problem, new RegExp(String(MAX_UPLOAD_DIMENSION)));
+});
+
+test("uploadRejection rejects an image over the limit on either side alone", () => {
+  assert.ok(uploadRejection({ name: "a.jpg", size: 10, width: MAX_UPLOAD_DIMENSION + 1, height: 10 }));
+  assert.ok(uploadRejection({ name: "a.jpg", size: 10, width: 10, height: MAX_UPLOAD_DIMENSION + 1 }));
+  assert.equal(
+    uploadRejection({
+      name: "a.jpg",
+      size: 10,
+      width: MAX_UPLOAD_DIMENSION,
+      height: MAX_UPLOAD_DIMENSION
+    }),
+    null
+  );
+});
+
+test("uploadRejection reports a file that could not be decoded as an image", () => {
+  const problem = uploadRejection({ name: "broken.png", size: 1000, width: null, height: null });
+  assert.match(problem, /could not be read as an image/);
+});
+
+test("uploadRejection skips the dimension check when dimensions are unknown", () => {
+  assert.equal(uploadRejection({ name: "photo.png", size: 1000 }), null);
+});
+
+test("uploadRejection reports the extension problem before the size problem", () => {
+  const problem = uploadRejection({ name: "huge.heic", size: MAX_UPLOAD_BYTES * 3, width: null, height: null });
+  assert.match(problem, /JPG, PNG, or WebP/);
+});

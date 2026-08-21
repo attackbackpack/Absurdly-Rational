@@ -8,6 +8,10 @@ on:
       - "scripts/**"
       - "package.json"
       - "package-lock.json"
+      - "index.html"
+      - "_includes/**"
+      - "editor/**"
+      - "worker/**"
   pull_request:
     paths:
       - "_data/**"
@@ -15,6 +19,10 @@ on:
       - "scripts/**"
       - "package.json"
       - "package-lock.json"
+      - "index.html"
+      - "_includes/**"
+      - "editor/**"
+      - "worker/**"
 
 permissions:
   contents: read
@@ -33,4 +41,4 @@ jobs:
       - name: Install validation dependencies
         run: npm ci
       - name: Validate editable content
-        run: npm run validate:content
+        run: npm run check

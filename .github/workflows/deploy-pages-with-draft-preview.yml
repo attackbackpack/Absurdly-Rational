@@ -77,9 +77,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # actions/jekyll-build-pages@v1 runs inside a Docker container as root,
+          # so _site and _preview-site come out root-owned. This step runs as the
+          # unprivileged runner user, so take ownership before touching them.
+          sudo chown -R "$(id -u):$(id -g)" _site _preview-site
           mkdir -p _site/preview
           cp -R _preview-site/. _site/preview/
           rm -f _site/preview/CNAME _site/preview/robots.txt _site/preview/sitemap.xml
+          # The preview is built from the editor branch — content the editor
+          # itself wrote. Publishing the editor from there would give a second,
+          # working, same-origin editor at /preview/editor/, built from its own
+          # output and outside the robots.txt deleted just above. The canonical
+          # editor is the one built from main at /editor/.
+          rm -rf _site/preview/editor
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4

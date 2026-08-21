@@ -16,3 +16,7 @@ exclude:
   - package.json
   - package-lock.json
   - scripts
+  - docs
+  - worker
+  - editor/package.json
+  - "editor/**/*.test.js"

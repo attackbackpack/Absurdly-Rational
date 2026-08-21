@@ -274,6 +274,22 @@ Object.entries(datasets).forEach(([name, data]) => {
 
 if (site) {
   validateUrl(site.url, "_data/site.json.url");
+
+  // index.html builds an edit path from this key — data-edit="site:home.formats
+  // [key={{ format.key }}].title" — and the editor parses that path at runtime.
+  // The build-time check above only ever sees the Liquid wildcard, so a key
+  // containing "]" or a quote, or an empty key, passes CI and then breaks the
+  // editor inside an iframe with nothing but a console error.
+  const formats = site.home && site.home.formats;
+  if (formats !== undefined && !Array.isArray(formats)) {
+    fail("_data/site.json.home.formats: expected a list of formats");
+  }
+  (Array.isArray(formats) ? formats : []).forEach((format, index) => {
+    const location = `_data/site.json.home.formats[${index}].key`;
+    if (!isObject(format) || typeof format.key !== "string" || !/^[A-Za-z0-9_-]+$/.test(format.key)) {
+      fail(`${location}: use letters, numbers, hyphens, or underscores only — the editor builds an edit path from this key`);
+    }
+  });
 }
 
 if (editorGuide) {

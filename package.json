@@ -5,8 +5,11 @@
   "description": "Content validation and image optimization for the Absurdly Rational static site.",
   "scripts": {
     "validate:content": "node scripts/validate-content.js",
+    "validate:edit-paths": "node scripts/validate-edit-paths.mjs",
     "optimize:images": "node scripts/optimize-images.js",
-    "check": "npm run validate:content"
+    "dev:editor-api": "node scripts/dev-editor-api.mjs",
+    "check": "npm run validate:content && npm run validate:edit-paths && npm test",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20.9"

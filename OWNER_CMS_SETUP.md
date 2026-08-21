@@ -30,6 +30,25 @@ The owner’s GitHub authorization is the authority that connects Pages CMS to t
 
 The preview URL is unlisted and carries `noindex`, `nofollow`, and `noarchive`, but it is not password-protected. Do not use it for confidential or legally sensitive drafts.
 
+## The visual site editor
+
+There is now a second way for Dad to make changes: a visual editor at
+[absurdlyrational.com/editor/](https://absurdlyrational.com/editor/). For now it only covers the
+**homepage** — for anything else, keep using Pages CMS as described above.
+
+1. Open the page and sign in with the editor password.
+2. Hover over the homepage preview to see which parts can be changed. Click on any highlighted
+   text to type directly into it. Click on any highlighted image to see its options.
+3. Click **Save**. This writes to the `editor` branch exactly like Pages CMS does — the same
+   draft preview, the same **Request owner review** button, and the same merge steps described
+   above all apply unchanged.
+
+Pages CMS is still the way to edit readings, podcasts, memes, navigation, and the footer.
+
+One quirk to know: if a homepage spot currently shows the built-in geometric artwork and you
+add a photo there for the first time, the preview won't show your new photo until after you
+save and the site rebuilds — reload the preview a moment after saving to see it.
+
 ## Owner approval and publishing
 
 1. Open the pull request created by `Request owner review`.
