@@ -7,9 +7,27 @@ can't.
 ## 1. Look and feel — no credentials, ~2 minutes
 
 This uses `scripts/dev-editor-api.mjs`, a dependency-free Node server that speaks the same
-HTTP contract as the real Worker (`worker/src/worker.js`) but never touches GitHub and keeps
-everything in process memory — restart it and every "save" is gone. It has no security value;
-its only job is to let the editor UI run.
+HTTP contract as the real Worker (`worker/src/worker.js`) but never touches GitHub. It has no
+security value; its only job is to let the editor UI run.
+
+Saves through this server **really do write to your working tree**: a save updates
+`_data/site.json` (and any uploaded files under `assets/uploads/`) on disk, the same bytes the
+editor produced, byte-for-byte. Jekyll's file watcher picks up the change and rebuilds
+automatically, so this is how you actually confirm saving works: make an edit, press Save,
+then press "Reload preview" — you should see your change in the rendered page, not the
+original text. If it still shows the original after a save, something is broken.
+
+This modifies tracked files in your checkout — it is not a commit, but it is a real change to
+files `git status` will show. **Undo it before committing anything else**, so your local test
+edits never end up in a commit:
+
+```bash
+git checkout -- _data/site.json && git clean -fd assets/uploads
+```
+
+Run that after every level-1 test session. If you'd rather the dev server not touch disk at
+all (the old behavior — everything held in process memory, lost on restart), start it with
+`DEV_EDITOR_MEMORY_ONLY=1 npm run dev:editor-api`.
 
 Two terminals, from the repository root:
 
@@ -36,10 +54,13 @@ host like `localhost` — there is nothing to edit or revert in `editor/index.ht
 committed `data-api` attribute on `<body>` always points at the deployed Worker and is only
 ever meant to change when you substitute your own deployed Worker URL for production.
 
-What this level proves: the UI works — sign-in flow, hover states, click-to-edit, the image
-panel, save/error plumbing. What it does **not** prove: anything about GitHub, real
-authentication, or the write-path allowlist. The stand-in enforces none of those — it accepts
-any file path and never rate-limits or persists anything.
+What this level proves: the editor's read/edit/save/render loop is sound — sign-in flow, hover
+states, click-to-edit, the image panel, and that a save actually lands and reloads correctly.
+What it does **not** prove: anything about GitHub, real authentication, or the write-path
+allowlist. The stand-in does enforce the same path allowlist shape as the real Worker (only
+`_data/*.json` and `assets/uploads/*`), but it is not a security boundary — nothing here
+guards against a hostile client the way production auth does, and there is no rate limiting or
+real commit history.
 
 ## 2. Real end-to-end, without deploying the Worker
 
@@ -94,8 +115,8 @@ Worker URL), merge to `main`, and confirm at `https://absurdlyrational.com/edito
 - **Open Page settings.** A panel with page-level fields (title, description, etc., depending
   on the page) opens without disturbing the live preview underneath.
 - **Press Save.** A save indicator appears and resolves to success; reloading the editor should
-  show your changes persisted (in level 1, only until the dev server restarts; in levels 2–3,
-  as a real commit).
+  show your changes persisted (in level 1, as a real change to `_data/site.json` in your
+  working tree — undo it with the command above; in levels 2–3, as a real commit).
 
 One thing that looks broken but isn't: adding a **first** image where built-in decorative
 artwork currently shows will not preview inline immediately — it only appears after a save and
