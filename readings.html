@@ -9,8 +9,8 @@ permalink: /readings.html
 
   <main class="page-shell">
     <header class="page-intro">
-      <h1>{{ readings.page.title }}</h1>
-      <p class="page-lede">{{ readings.page.lede }}</p>
+      <h1 data-edit="readings:page.title">{{ readings.page.title | escape }}</h1>
+      <p class="page-lede" data-edit="readings:page.lede">{{ readings.page.lede | escape }}</p>
     </header>
 
     <section class="topic-index" aria-label="{{ readings.page.topic_index_aria }}">
@@ -28,11 +28,11 @@ permalink: /readings.html
           <span class="topic-door-signal" aria-hidden="true"><span></span><span></span><span></span></span>
           <span class="topic-door-copy">
             <span class="topic-door-heading">
-              <h2>{{ topic.title }}</h2>
+              <h2 data-edit="readings:topics[slug={{ topic.slug }}].title">{{ topic.title | escape }}</h2>
               <span class="link-arrow" aria-hidden="true"></span>
             </span>
-            <span class="topic-door-description">{{ topic.description }}</span>
-            <span class="topic-door-footer"><span>{{ topic_posts.size }} {% if topic_posts.size == 1 %}essay{% else %}essays{% endif %}</span><span>{{ topic.index_label }}</span></span>
+            <span class="topic-door-description" data-edit="readings:topics[slug={{ topic.slug }}].description">{{ topic.description | escape }}</span>
+            <span class="topic-door-footer"><span>{{ topic_posts.size }} {% if topic_posts.size == 1 %}essay{% else %}essays{% endif %}</span><span data-edit="readings:topics[slug={{ topic.slug }}].index_label">{{ topic.index_label | escape }}</span></span>
           </span>
         </a>
       {% endfor %}
@@ -40,10 +40,10 @@ permalink: /readings.html
 
     <aside class="source-note">
       <div>
-        <h2>{{ readings.page.source_note.index_title }}</h2>
-        <p>{{ readings.page.source_note.index_description }}</p>
+        <h2 data-edit="readings:page.source_note.index_title">{{ readings.page.source_note.index_title | escape }}</h2>
+        <p data-edit="readings:page.source_note.index_description">{{ readings.page.source_note.index_description | escape }}</p>
       </div>
-      <a class="text-link" href="{{ readings.page.archive_url }}" target="_blank" rel="noopener noreferrer">{{ readings.page.source_note.archive_label }}<span class="link-arrow" aria-hidden="true"></span></a>
+      <a class="text-link" href="{{ readings.page.archive_url }}" target="_blank" rel="noopener noreferrer"><span data-edit="readings:page.source_note.archive_label">{{ readings.page.source_note.archive_label | escape }}</span><span class="link-arrow" aria-hidden="true"></span></a>
     </aside>
   </main>
 
