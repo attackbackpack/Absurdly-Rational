@@ -106,3 +106,58 @@ test("collectMatches expands a wildcard index across every array member", () => 
   const { segments } = parseSpec("site:home.formats[index={{ forloop.index0 }}].title");
   assert.deepEqual(collectMatches(data, segments), ["Selected Readings", "Podcasts"]);
 });
+
+// The reviewer's fixture for the compound-spec bug: two guests, the second
+// with a SECOND link that is missing the trailing field. Expanding only the
+// first wildcard let this pass, because [index=null] resolved as index 0.
+const guests = {
+  guests: [
+    { key: "a", links: [{ label: "one" }, { label: "two" }] },
+    { key: "b", links: [{ label: "three" }, { url: "https://example.com" }] }
+  ]
+};
+
+test("collectMatches expands every wildcard, not only the first", () => {
+  const { segments } = parseSpec(
+    "podcasts:guests[key={{ guest.key }}].links[index={{ forloop.index0 }}].label"
+  );
+  const complete = structuredClone(guests);
+  complete.guests[1].links[1].label = "four";
+  assert.deepEqual(collectMatches(complete, segments), ["one", "two", "three", "four"]);
+});
+
+test("collectMatches catches a missing field on a LATER member of a nested wildcard", () => {
+  const { segments } = parseSpec(
+    "podcasts:guests[key={{ guest.key }}].links[index={{ forloop.index0 }}].label"
+  );
+  assert.throws(() => collectMatches(guests, segments), /label/);
+});
+
+test("collectMatches names the outer member that failed", () => {
+  const { segments } = parseSpec(
+    "podcasts:guests[key={{ guest.key }}].links[index={{ forloop.index0 }}].label"
+  );
+  assert.throws(
+    () => collectMatches(guests, segments),
+    /guests\.\[key=\*\]\[1\]: links\.\[index=\*\]\[1\]: label/
+  );
+});
+
+test("collectMatches returns the matched objects themselves when the spec ends at the wildcard", () => {
+  const { segments } = parseSpec("memes:items[key={{ item.key }}]");
+  const items = { items: [{ key: "a" }, { key: "b" }] };
+  assert.deepEqual(collectMatches(items, segments), [{ key: "a" }, { key: "b" }]);
+});
+
+test("collectMatches expands three wildcards across a deeper shape", () => {
+  const deep = {
+    groups: [
+      { rows: [{ cells: [{ text: "a" }, { text: "b" }] }] },
+      { rows: [{ cells: [{ text: "c" }] }, { cells: [{ text: "d" }] }] }
+    ]
+  };
+  const { segments } = parseSpec(
+    "site:groups[index={{ a }}].rows[index={{ b }}].cells[index={{ c }}].text"
+  );
+  assert.deepEqual(collectMatches(deep, segments), ["a", "b", "c", "d"]);
+});
