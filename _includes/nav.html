@@ -15,7 +15,7 @@
     </a>
     <div class="nav-links">
       {% for item in site.data.site.navigation %}
-      <a class="nav-link" href="{{ item.url | relative_url }}" data-page-link="{{ item.key }}"{% if include.current == item.key %} aria-current="page"{% endif %}>{{ item.label }}</a>
+      <a class="nav-link" href="{{ item.url | relative_url }}" data-page-link="{{ item.key }}"{% if include.current == item.key %} aria-current="page"{% endif %}><span data-edit="site:navigation[key={{ item.key }}].label">{{ item.label | escape }}</span></a>
       {% endfor %}
     </div>
   </div>
