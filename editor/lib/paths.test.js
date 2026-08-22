@@ -86,3 +86,23 @@ test("collectMatches throws when one member lacks the field", () => {
   const { segments } = parseSpec("site:home.formats[key={{ format.key }}].title");
   assert.throws(() => collectMatches(broken, segments), /title/);
 });
+
+test("getValue reads through a literal index match", () => {
+  const { segments } = parseSpec("site:home.formats[index=1].title");
+  assert.equal(getValue(data, segments), "Podcasts");
+});
+
+test("getValue throws on an out-of-range index", () => {
+  const { segments } = parseSpec("site:home.formats[index=5].title");
+  assert.throws(() => getValue(data, segments), /index/);
+});
+
+test("getValue throws on a non-numeric index", () => {
+  const { segments } = parseSpec("site:home.formats[index=nope].title");
+  assert.throws(() => getValue(data, segments), /index/);
+});
+
+test("collectMatches expands a wildcard index across every array member", () => {
+  const { segments } = parseSpec("site:home.formats[index={{ forloop.index0 }}].title");
+  assert.deepEqual(collectMatches(data, segments), ["Selected Readings", "Podcasts"]);
+});

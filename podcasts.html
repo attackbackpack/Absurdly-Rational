@@ -9,13 +9,13 @@ permalink: /podcasts.html
 
   <main class="page-shell">
     <header class="page-intro">
-      <h1>{{ podcasts.title }}</h1>
-      <p class="page-lede">{{ podcasts.lede }}</p>
+      <h1 data-edit="podcasts:page.title">{{ podcasts.title | escape }}</h1>
+      <p class="page-lede" data-edit="podcasts:page.lede">{{ podcasts.lede | escape }}</p>
     </header>
 
     <section class="podcast-show" aria-labelledby="show-title">
       {% assign show_image_path = podcasts.show.image.path | default: "" %}
-      <div class="podcast-visual{% if show_image_path != empty %} podcast-visual--image{% endif %}"{% if show_image_path == empty %} aria-hidden="true"{% endif %}>
+      <div class="podcast-visual{% if show_image_path != empty %} podcast-visual--image{% endif %}" data-edit-image="podcasts:page.show.image"{% if show_image_path == empty %} aria-hidden="true"{% endif %}>
         {% if show_image_path != empty %}
           {% include image.html image=podcasts.show.image class_name="podcast-image-object" %}
         {% else %}
@@ -23,21 +23,21 @@ permalink: /podcasts.html
           <span class="podcast-wave podcast-wave--one"></span>
           <span class="podcast-wave podcast-wave--two"></span>
           <span class="podcast-wave podcast-wave--three"></span>
-          <span class="podcast-label">{{ podcasts.show.label }}</span>
+          <span class="podcast-label" data-edit="podcasts:page.show.label">{{ podcasts.show.label | escape }}</span>
         {% endif %}
       </div>
       <div class="podcast-show-copy">
-        <h2 id="show-title">{{ podcasts.show.title }}</h2>
-        <p>{{ podcasts.show.description }}</p>
-        <span class="reading-meta">{{ podcasts.show.meta }}</span>
-        <a class="button button--light" href="{{ podcasts.show.url }}"{% if podcasts.show.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ podcasts.show.button_label }}<span class="link-arrow" aria-hidden="true"></span></a>
+        <h2 id="show-title" data-edit="podcasts:page.show.title">{{ podcasts.show.title | escape }}</h2>
+        <p data-edit="podcasts:page.show.description">{{ podcasts.show.description | escape }}</p>
+        <span class="reading-meta" data-edit="podcasts:page.show.meta">{{ podcasts.show.meta | escape }}</span>
+        <a class="button button--light" href="{{ podcasts.show.url }}"{% if podcasts.show.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}><span data-edit="podcasts:page.show.button_label">{{ podcasts.show.button_label | escape }}</span><span class="link-arrow" aria-hidden="true"></span></a>
       </div>
     </section>
 
     <section class="guest-section" aria-labelledby="guest-title">
       <div class="section-heading section-heading--compact">
-        <h2 id="guest-title">{{ podcasts.guests_heading }}</h2>
-        <p>{{ podcasts.guests_description }}</p>
+        <h2 id="guest-title" data-edit="podcasts:page.guests_heading">{{ podcasts.guests_heading | escape }}</h2>
+        <p data-edit="podcasts:page.guests_description">{{ podcasts.guests_description | escape }}</p>
       </div>
       <div class="guest-grid">
         {% for guest in site.data.podcasts.guests %}
@@ -49,11 +49,11 @@ permalink: /podcasts.html
         {% unless guest.visible == false %}
         <article class="guest-card guest-card--{{ guest_class }}">
           {% assign guest_image_path = guest.image.path | default: "" %}
-          <div class="guest-art guest-art--{{ guest_class }}{% if guest_image_path != empty %} guest-art--image{% endif %}"{% if guest_image_path == empty %} aria-hidden="true"{% endif %}>
+          <div class="guest-art guest-art--{{ guest_class }}{% if guest_image_path != empty %} guest-art--image{% endif %}" data-edit-image="podcasts:guests[key={{ guest.key }}].image"{% if guest_image_path == empty %} aria-hidden="true"{% endif %}>
             {% if guest_image_path != empty %}
               {% include image.html image=guest.image class_name="guest-image-object" %}
             {% elsif guest_class == "stanford" %}
-              <span>{{ guest.art_label }}</span>
+              <span data-edit="podcasts:guests[key={{ guest.key }}].art_label">{{ guest.art_label | escape }}</span>
               <span class="guest-art-line guest-art-line--one"></span>
               <span class="guest-art-line guest-art-line--two"></span>
             {% else %}
@@ -63,12 +63,12 @@ permalink: /podcasts.html
             {% endif %}
           </div>
           <div class="guest-card-copy">
-            <h3>{{ guest.title }}</h3>
-            <p>{{ guest.description }}</p>
-            <span class="reading-meta">{{ guest.meta }}</span>
+            <h3 data-edit="podcasts:guests[key={{ guest.key }}].title">{{ guest.title | escape }}</h3>
+            <p data-edit="podcasts:guests[key={{ guest.key }}].description">{{ guest.description | escape }}</p>
+            <span class="reading-meta" data-edit="podcasts:guests[key={{ guest.key }}].meta">{{ guest.meta | escape }}</span>
             <div class="card-actions">
               {% for link in guest.links %}
-              <a class="{% if link.arrow %}text-link{% else %}secondary-link{% endif %}" href="{{ link.url }}"{% if link.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ link.label }}{% if link.arrow %}<span class="link-arrow" aria-hidden="true"></span>{% endif %}</a>
+              <a class="{% if link.arrow %}text-link{% else %}secondary-link{% endif %}" href="{{ link.url }}"{% if link.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}><span data-edit="podcasts:guests[key={{ guest.key }}].links[index={{ forloop.index0 }}].label">{{ link.label | escape }}</span>{% if link.arrow %}<span class="link-arrow" aria-hidden="true"></span>{% endif %}</a>
               {% endfor %}
             </div>
           </div>
@@ -80,10 +80,10 @@ permalink: /podcasts.html
 
     <section class="podcast-invite" aria-labelledby="invite-title">
       <div>
-        <h2 id="invite-title">{{ podcasts.invite.title }}</h2>
-        <p>{{ podcasts.invite.description }}</p>
+        <h2 id="invite-title" data-edit="podcasts:page.invite.title">{{ podcasts.invite.title | escape }}</h2>
+        <p data-edit="podcasts:page.invite.description">{{ podcasts.invite.description | escape }}</p>
       </div>
-      <a class="button button--outline" href="{{ podcasts.invite.url }}"{% if podcasts.invite.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ podcasts.invite.button_label }}<span class="link-arrow" aria-hidden="true"></span></a>
+      <a class="button button--outline" href="{{ podcasts.invite.url }}"{% if podcasts.invite.new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}><span data-edit="podcasts:page.invite.button_label">{{ podcasts.invite.button_label | escape }}</span><span class="link-arrow" aria-hidden="true"></span></a>
     </section>
   </main>
 

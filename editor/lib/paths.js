@@ -37,6 +37,9 @@ export function parseSpec(spec) {
     const [, name, matchKey, matchValue] = match;
     segments.push({ kind: "key", name });
     if (matchKey !== undefined) {
+      // "index" is a reserved match key: it selects an array member by
+      // position (see walk()) rather than by matching a field named
+      // "index". A collection must not have a literal "index" field.
       segments.push({
         kind: "match",
         key: matchKey,
@@ -74,11 +77,21 @@ function walk(data, segments, stopBefore) {
       if (!Array.isArray(cursor)) {
         throw new Error(`${describe(segments, i)}: expected an array`);
       }
-      const found = cursor.find((item) => item && item[segment.key] === segment.value);
-      if (found === undefined) {
-        throw new Error(`${describe(segments, i)}: no member with ${segment.key}=${segment.value}`);
+      if (segment.key === "index") {
+        // Position-based match: select by array index rather than by a
+        // field. See the reservation note in parseSpec above.
+        const idx = Number(segment.value);
+        if (!Number.isInteger(idx) || idx < 0 || idx >= cursor.length) {
+          throw new Error(`${describe(segments, i)}: index ${segment.value} out of range`);
+        }
+        cursor = cursor[idx];
+      } else {
+        const found = cursor.find((item) => item && item[segment.key] === segment.value);
+        if (found === undefined) {
+          throw new Error(`${describe(segments, i)}: no member with ${segment.key}=${segment.value}`);
+        }
+        cursor = found;
       }
-      cursor = found;
     }
   }
   return cursor;
