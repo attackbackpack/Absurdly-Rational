@@ -1,3 +1,5 @@
+import { normalizeEditText, editTextChanged } from "./editText.js";
+
 const OVERLAY_STYLE = `
 [data-edit], [data-edit-image] { outline-offset: 3px; cursor: text; }
 [data-edit]:hover { outline: 2px dashed rgba(111,123,255,.9); }
@@ -23,6 +25,17 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
     const link = event.target.closest("a");
     if (link) event.preventDefault();
   }, true);
+
+  // The same field can render more than once on a page (e.g. the nav
+  // appears in both the header and the footer). Group nodes by spec so a
+  // committed write can be pushed into the other copies, keeping every
+  // rendering of a field in sync with the draft.
+  const nodesBySpec = new Map();
+  for (const node of doc.querySelectorAll("[data-edit]")) {
+    const spec = node.dataset.edit;
+    if (!nodesBySpec.has(spec)) nodesBySpec.set(spec, []);
+    nodesBySpec.get(spec).push(node);
+  }
 
   for (const node of doc.querySelectorAll("[data-edit]")) {
     node.setAttribute("contenteditable", "plaintext-only");
@@ -89,9 +102,27 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick }) {
         textOnFocus = null;
         return;
       }
-      const text = node.textContent.replace(/\s+/g, " ").trim();
+      const text = normalizeEditText(node.textContent);
       node.textContent = text;
+      // Focusing a field and leaving without typing must not write: with a
+      // field rendered twice on a page (e.g. the nav in header and footer),
+      // an unconditional write here would let a stale, untouched copy
+      // silently revert an edit already committed through the other node.
+      if (!editTextChanged(textOnFocus, text)) {
+        textOnFocus = null;
+        return;
+      }
+      textOnFocus = null;
       draft.write(node.dataset.edit, text);
+      // Push the committed value into every other node sharing this spec so
+      // the page stays coherent and the stale copy can't be re-committed
+      // later. Never touch the node currently being edited, and skip any
+      // node that currently has focus — reassigning its textContent would
+      // move its caret mid-edit.
+      for (const other of nodesBySpec.get(node.dataset.edit) || []) {
+        if (other === node || other === doc.activeElement) continue;
+        other.textContent = text;
+      }
       onDirty();
     });
   }
