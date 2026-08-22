@@ -1,6 +1,7 @@
 import { FITS, FOCUSES, fitClass, focusClass } from "./imagefit.js";
 import { uploadRejection } from "./draft.js";
-import { fieldsForPage } from "./pagefields.js";
+import { fieldsForPage, guestLinkFields, MEME_FIELDS } from "./pagefields.js";
+import { textRejection, altRejection } from "./rules.js";
 
 let closeOpenPanel = null;
 
@@ -46,16 +47,58 @@ function present(root, box) {
   if (first) first.focus();
 }
 
-function field(label, value, onChange, type = "text") {
+/**
+ * A labelled control, optionally refusing values the owner's CI would reject.
+ *
+ * `validate` returns a sentence explaining the refusal, or null. A refused
+ * value is shown inline and never written to the draft, and leaving the field
+ * while it is refused puts the last accepted value back — same shape as the
+ * image picker's reject() below, so the two read alike.
+ *
+ * Returns a fragment rather than the <label> so the message is a sibling of
+ * the label instead of part of its text.
+ */
+function field(label, value, onChange, type = "text", validate = null) {
+  const fragment = document.createDocumentFragment();
   const wrapper = document.createElement("label");
   wrapper.className = "ar-field";
   wrapper.textContent = label;
   const input = type === "textarea" ? document.createElement("textarea") : document.createElement("input");
   if (type !== "textarea") input.type = type;
   input.value = value ?? "";
-  input.addEventListener("input", () => onChange(input.value));
   wrapper.appendChild(input);
-  return wrapper;
+  fragment.appendChild(wrapper);
+
+  if (!validate) {
+    input.addEventListener("input", () => onChange(input.value));
+    return fragment;
+  }
+
+  const problem = document.createElement("p");
+  problem.className = "ar-problem";
+  problem.setAttribute("role", "alert");
+  problem.hidden = true;
+  fragment.appendChild(problem);
+
+  let accepted = input.value;
+  let reason = "";
+  input.addEventListener("input", () => {
+    reason = validate(input.value) || "";
+    if (reason) {
+      problem.textContent = reason;
+      problem.hidden = false;
+      return;
+    }
+    problem.hidden = true;
+    accepted = input.value;
+    onChange(input.value);
+  });
+  input.addEventListener("blur", () => {
+    if (problem.hidden) return;
+    input.value = accepted;
+    problem.textContent = `${reason} Your earlier text has been put back.`;
+  });
+  return fragment;
 }
 
 function select(label, options, value, onChange) {
@@ -118,6 +161,10 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   // via the call site (door art is always decorative there, whatever the data
   // says), `image.decorative` from the content itself.
   const isDecorative = decorative || image.decorative === true;
+  // The alt text and path as they stand right now, so the picker and the alt
+  // field can ask about each other without re-reading the draft.
+  let currentAlt = typeof image.alt === "string" ? image.alt : "";
+  let currentPath = typeof image.path === "string" ? image.path : "";
 
   // Applied by every handler that changes this slot — never on open, so that
   // looking at an image and closing the panel leaves the draft clean.
@@ -159,6 +206,15 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
     const file = picker.files[0];
     if (!file) return;
     problem.hidden = true;
+    // Once this file is staged the image has a path, and validateImage then
+    // requires alt text on any image the data does not mark decorative. Ask for
+    // it before staging rather than letting the save break the owner's build —
+    // which is why the description box sits above this one.
+    const missingAlt = altRejection({ alt: currentAlt, decorative: isDecorative });
+    if (missingAlt) {
+      reject(`${missingAlt} Type it in the box above, then choose the picture again.`);
+      return;
+    }
     // `accept` is only a dialog hint, and assets/uploads/ is re-validated in CI
     // on every push — an oversized or wrong-format file staged here would fail
     // the owner's build long after this panel closed. Check before staging.
@@ -185,18 +241,18 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
       return;
     }
     completeShape();
-    const repoPath = draft.stageUpload(file.name, await fileToBase64(file));
+    // Passing the spec lets the draft drop the file staged for this same slot
+    // a moment ago: without it, changing your mind about a picture committed
+    // both the one you kept and the one you abandoned.
+    const repoPath = draft.stageUpload(file.name, await fileToBase64(file), spec);
     draft.write(`${spec}.path`, repoPath);
+    currentPath = repoPath;
     if (img) img.src = URL.createObjectURL(file);
     onDirty();
   });
-  const pickerLabel = document.createElement("label");
-  pickerLabel.className = "ar-field";
-  pickerLabel.textContent = "Replace image";
-  pickerLabel.appendChild(picker);
-  box.appendChild(pickerLabel);
-  box.appendChild(problem);
 
+  // The description has to be filled in before a picture can be chosen, so it
+  // is asked for first.
   if (isDecorative) {
     const note = document.createElement("p");
     note.className = "ar-notice";
@@ -204,14 +260,30 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
     box.appendChild(note);
   } else {
     box.appendChild(
-      field("Alternative text (describe the image for screen readers)", image.alt, (value) => {
-        completeShape();
-        draft.write(`${spec}.alt`, value);
-        if (img) img.alt = value;
-        onDirty();
-      })
+      field(
+        "Alternative text (describe the image for screen readers)",
+        image.alt,
+        (value) => {
+          completeShape();
+          currentAlt = value;
+          draft.write(`${spec}.alt`, value);
+          if (img) img.alt = value;
+          onDirty();
+        },
+        "text",
+        // Only a refusal once there is a picture to describe — validateImage
+        // ignores alt on an image with no path, and so must this.
+        (value) => altRejection({ alt: value, path: currentPath, decorative: isDecorative })
+      )
     );
   }
+
+  const pickerLabel = document.createElement("label");
+  pickerLabel.className = "ar-field";
+  pickerLabel.textContent = "Replace image";
+  pickerLabel.appendChild(picker);
+  box.appendChild(pickerLabel);
+  box.appendChild(problem);
 
   box.appendChild(
     select("Image fit", FITS, image.fit || "cover", (value) => {
@@ -245,7 +317,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   present(root, box);
 }
 
-export function openMemePanel({ anchor, spec, draft, onDirty }) {
+export function openMemePanel({ anchor, spec, draft, onDirty, onEditImage }) {
   const { root, close } = panelRoot();
   const box = document.createElement("div");
   box.className = "ar-panel-box";
@@ -259,24 +331,64 @@ export function openMemePanel({ anchor, spec, draft, onDirty }) {
   note.textContent = "Title and caption appear when someone opens this meme, not on the wall.";
   box.appendChild(note);
 
-  for (const [suffix, label, type] of [
-    ["title", "Title", "text"],
-    ["caption", "Caption", "textarea"],
-    ["art.headline", "Artwork headline", "textarea"],
-    ["art.accent", "Artwork accent", "textarea"]
-  ]) {
+  const drifted = [];
+  for (const [suffix, label, type] of MEME_FIELDS) {
+    const fieldSpec = `${spec}.${suffix}`;
     let current;
     try {
-      current = draft.read(`${spec}.${suffix}`);
-    } catch {
+      current = draft.read(fieldSpec);
+    } catch (error) {
+      // A key that is genuinely absent is fine to leave out: art.kicker,
+      // art.accent and art.stamp are optional in .pages.yml. Anything else —
+      // a renamed key, a preview showing a meme the draft no longer has — is
+      // drift, and a bare `catch { continue }` used to hide it completely:
+      // the panel just came up with fewer fields than it should have.
+      if (/: no such key$/.test(error.message)) continue;
+      drifted.push(`${label}: ${error.message}`);
       continue;
     }
     box.appendChild(
-      field(label, current, (value) => {
-        draft.write(`${spec}.${suffix}`, value);
-        onDirty();
-      }, type)
+      field(
+        label,
+        current,
+        (value) => {
+          draft.write(fieldSpec, value);
+          onDirty();
+        },
+        type,
+        (value) => textRejection(fieldSpec, value)
+      )
     );
+  }
+
+  // The picture reaches the image panel from here rather than from its own
+  // annotation on the tile: the tile IS the [data-edit-meme] target, so a
+  // [data-edit-image] on the same element would give two handlers one click,
+  // and one on the art inside it would swallow the click before the meme
+  // panel could ever open. One click opens this panel; this button opens the
+  // picture controls.
+  if (onEditImage) {
+    let hasImage = true;
+    try {
+      draft.read(`${spec}.image`);
+    } catch {
+      hasImage = false;
+    }
+    if (hasImage) {
+      const picture = document.createElement("button");
+      picture.type = "button";
+      picture.textContent = "Change the picture…";
+      picture.addEventListener("click", () => onEditImage(anchor, `${spec}.image`));
+      box.appendChild(picture);
+    }
+  }
+
+  if (drifted.length) {
+    const problem = document.createElement("p");
+    problem.className = "ar-problem";
+    problem.setAttribute("role", "alert");
+    problem.textContent = `Some fields could not be shown: ${drifted.join("; ")}. Reload the preview and try again.`;
+    box.appendChild(problem);
   }
 
   const done = document.createElement("button");
@@ -298,13 +410,43 @@ export function openSettingsPanel({ draft, onDirty, page }) {
   heading.textContent = page ? `Page settings — ${page[0].toUpperCase()}${page.slice(1)}` : "Page settings";
   box.appendChild(heading);
 
-  for (const [spec, label] of links) {
-    box.appendChild(
-      field(label, draft.read(spec), (value) => {
+  const linkField = ([spec, label]) =>
+    field(
+      label,
+      draft.read(spec),
+      (value) => {
         draft.write(spec, value);
         onDirty();
-      })
+      },
+      "text",
+      (value) => textRejection(spec, value)
     );
+
+  for (const entry of links) {
+    box.appendChild(linkField(entry));
+  }
+
+  // Where each guest's buttons point. Per-guest and variable in number, so
+  // they are built from the draft rather than declared in CONFIG — see
+  // guestLinkFields for why they belong here and not on a per-guest panel.
+  if (page === "podcasts") {
+    let guests = [];
+    try {
+      guests = draft.read("podcasts:guests");
+    } catch {
+      guests = [];
+    }
+    const guestLinks = guestLinkFields(guests);
+    if (guestLinks.length) {
+      const guestNote = document.createElement("p");
+      guestNote.className = "ar-notice";
+      guestNote.textContent =
+        "Where each guest's buttons go. The wording on the buttons is edited on the page itself.";
+      box.appendChild(guestNote);
+      for (const entry of guestLinks) {
+        box.appendChild(linkField(entry));
+      }
+    }
   }
 
   const note = document.createElement("p");

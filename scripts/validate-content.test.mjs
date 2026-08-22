@@ -6,6 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { seedImageWrites } from "../editor/lib/panels.js";
+import { textRejection, altRejection } from "../editor/lib/rules.js";
 
 // scripts/validate-content.js is a top-level script with no exports: requiring
 // it runs the whole validation against this repository's real _data. Rather
@@ -67,8 +68,14 @@ function baseSite(home = {}) {
   };
 }
 
-/** Runs the real validator over a throwaway repository; returns its output. */
-function validate({ site, uploads = {}, readingsData, podcastsData, memesData }) {
+/**
+ * Runs the real validator over a throwaway repository; returns its output.
+ *
+ * `realAssets` copies this repository's assets/ across, which the cases built
+ * from the real _data need: site.json points brand_image at a committed file,
+ * and validateImage fails on a local path with nothing behind it.
+ */
+function validate({ site, uploads = {}, readingsData, podcastsData, memesData, realAssets = false }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ar-validate-"));
   try {
     fs.mkdirSync(path.join(root, "scripts"));
@@ -84,6 +91,9 @@ function validate({ site, uploads = {}, readingsData, podcastsData, memesData })
     write("readings.json", readingsData || readings());
     write("podcasts.json", podcastsData || { guests: [] });
     write("memes.json", memesData || { items: [] });
+    if (realAssets) {
+      fs.cpSync(path.join(repoRoot, "assets"), path.join(root, "assets"), { recursive: true });
+    }
     for (const [name, contents] of Object.entries(uploads)) {
       fs.mkdirSync(path.join(root, "assets", "uploads"), { recursive: true });
       fs.writeFileSync(path.join(root, "assets", "uploads", name), contents);
@@ -335,4 +345,181 @@ test("the real repository data has no duplicates", () => {
     memesData: realMemes
   });
   assert.ok(result.ok, result.output);
+});
+
+// --- The editor's rules and this validator must agree ----------------------
+// editor/lib/rules.js mirrors the checks below so an edit that would break the
+// owner's CI is refused at the point of edit instead. Each case is one row of
+// the reviewer's reproduction: make the edit the editor allows, run the REAL
+// validator over it, and assert both that CI would have failed and that the
+// editor now refuses it.
+
+function withReadings(mutate) {
+  const copy = structuredClone(realReadings);
+  mutate(copy);
+  return copy;
+}
+
+function withPodcasts(mutate) {
+  const copy = structuredClone(realPodcasts);
+  mutate(copy);
+  return copy;
+}
+
+function withMemes(mutate) {
+  const copy = structuredClone(realMemes);
+  mutate(copy);
+  return copy;
+}
+
+test("the real data as it ships passes the validator", () => {
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: realReadings,
+    podcastsData: realPodcasts,
+    memesData: realMemes
+  });
+  assert.ok(result.ok, result.output);
+});
+
+test("deleting a reading's title fails the validator, and the editor refuses it", () => {
+  const spec = `readings:posts[url=${realReadings.posts[0].url}].title`;
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: withReadings((data) => {
+      data.posts[0].title = "";
+    }),
+    podcastsData: realPodcasts,
+    memesData: realMemes
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /posts\[0\]\.title: title is required/);
+  assert.ok(textRejection(spec, ""), "the editor must refuse the same edit");
+});
+
+test("clearing a meme's title fails the validator, and the editor refuses it", () => {
+  const spec = `memes:items[key=${realMemes.items[0].key}].title`;
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: realReadings,
+    podcastsData: realPodcasts,
+    memesData: withMemes((data) => {
+      data.items[0].title = "  ";
+    })
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /items\[0\]\.title: title is required/);
+  assert.ok(textRejection(spec, "  "));
+});
+
+test("clearing the Listen or Invite link fails the validator, and the editor refuses it", () => {
+  for (const [key, spec] of [
+    ["show", "podcasts:page.show.url"],
+    ["invite", "podcasts:page.invite.url"]
+  ]) {
+    const result = validate({
+      site: realSite,
+      realAssets: true,
+      readingsData: realReadings,
+      podcastsData: withPodcasts((data) => {
+        data.page[key].url = "";
+      }),
+      memesData: realMemes
+    });
+    assert.equal(result.ok, false, key);
+    assert.match(result.output, new RegExp(`page\\.${key}\\.url: URL is required`));
+    assert.ok(textRejection(spec, ""), spec);
+  }
+});
+
+test("an http:// link fails the validator, and the editor refuses it", () => {
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: realReadings,
+    podcastsData: withPodcasts((data) => {
+      data.page.show.url = "http://open.spotify.com/show/x";
+    }),
+    memesData: realMemes
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /page\.show\.url: use an HTTPS URL/);
+  assert.ok(textRejection("podcasts:page.show.url", "http://open.spotify.com/show/x"));
+});
+
+test("a guest link's http:// URL fails the validator, and the editor refuses it", () => {
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: realReadings,
+    podcastsData: withPodcasts((data) => {
+      data.guests[0].links[1].url = "http://example.com/elsewhere";
+    }),
+    memesData: realMemes
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /guests\[0\]\.links\[1\]\.url: use an HTTPS URL/);
+  assert.ok(
+    textRejection(
+      `podcasts:guests[key=${realPodcasts.guests[0].key}].links[index=1].url`,
+      "http://example.com/elsewhere"
+    )
+  );
+});
+
+test("a guest photo with no alt text fails the validator, and the editor refuses staging it", () => {
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: realReadings,
+    podcastsData: withPodcasts((data) => {
+      data.guests[0].image.path = "assets/uploads/guest.png";
+      data.guests[0].image.alt = "";
+    }),
+    memesData: realMemes,
+    uploads: { "guest.png": ONE_PIXEL_PNG }
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /guests\[0\]\.image\.alt: provide alt text/);
+  assert.ok(altRejection({ alt: "", decorative: false }), "the picker must refuse to stage it");
+});
+
+test("script content anywhere fails the validator, and the editor refuses it", () => {
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: realReadings,
+    podcastsData: realPodcasts,
+    memesData: withMemes((data) => {
+      data.items[0].caption = "see <script>alert(1)</script>";
+    })
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /script content is not allowed/);
+  assert.ok(textRejection("memes:items[key=x].caption", "see <script>alert(1)</script>"));
+});
+
+test("the editor allows every edit the validator allows in these same fields", () => {
+  const result = validate({
+    site: realSite,
+    realAssets: true,
+    readingsData: withReadings((data) => {
+      data.posts[0].subtitle = "";
+    }),
+    podcastsData: withPodcasts((data) => {
+      data.page.show.url = "#anchor";
+    }),
+    memesData: withMemes((data) => {
+      data.items[0].caption = "";
+      data.items[0].art.stamp = "";
+    })
+  });
+  assert.ok(result.ok, result.output);
+  assert.equal(textRejection("readings:posts[index=0].subtitle", ""), null);
+  assert.equal(textRejection("podcasts:page.show.url", "#anchor"), null);
+  assert.equal(textRejection("memes:items[key=x].caption", ""), null);
+  assert.equal(textRejection("memes:items[key=x].art.stamp", ""), null);
 });

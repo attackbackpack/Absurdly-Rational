@@ -1,5 +1,6 @@
 import { normalizeEditText, editTextChanged } from "./editText.js";
 import { isInternalHref, fragmentId } from "./links.js";
+import { textRejection } from "./rules.js";
 
 const OVERLAY_STYLE = `
 [data-edit], [data-edit-image], [data-edit-meme] { outline-offset: 3px; cursor: text; }
@@ -7,6 +8,14 @@ const OVERLAY_STYLE = `
 [data-edit-image], [data-edit-meme] { cursor: pointer; }
 [data-edit-image]:hover, [data-edit-meme]:hover { outline: 2px dashed rgba(111,123,255,.9); }
 [data-edit]:focus { outline: 2px solid rgba(111,123,255,1); background: rgba(111,123,255,.08); }
+/* An emptied field collapses to zero height and stops being clickable, so
+   clearing text would otherwise be a one-way door: nothing left to click to
+   put it back. Give every empty field a visible target and say what it is.
+   The ::before box is generated content — it is not editable and never
+   reaches node.textContent, so it cannot be committed to the draft. */
+[data-edit]:empty { display: inline-block; min-width: 9ch; min-height: 1.2em; outline: 2px dashed rgba(111,123,255,.55); }
+[data-edit]:empty::before { content: "Empty — click to type"; opacity: .6; font-size: .8em; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; white-space: nowrap; }
+.ar-refusal { position: absolute; z-index: 2147483647; max-width: min(28rem, 80vw); padding: 10px 12px; border-radius: 10px; background: #2a1114; color: #ffdada; border: 1px solid #7a2b33; box-shadow: 0 8px 24px rgba(0,0,0,.35); font: 400 14px/1.45 system-ui, -apple-system, sans-serif; }
 `;
 
 export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate }) {
@@ -19,6 +28,33 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
   const on = (target, type, handler, options) => {
     target.addEventListener(type, handler, options);
     listeners.push(() => target.removeEventListener(type, handler, options));
+  };
+
+  // A refused edit has to say why, next to the field that was refused — the
+  // shell's status line is outside the iframe and easy to miss, and there is
+  // no panel here to hang an .ar-problem on. One reused node: a second refusal
+  // replaces the first rather than stacking.
+  let refusal = null;
+  let refusalTimer = null;
+  const clearRefusal = () => {
+    if (refusalTimer) frame.contentWindow.clearTimeout(refusalTimer);
+    refusalTimer = null;
+    if (refusal) refusal.remove();
+  };
+  const showRefusal = (node, message) => {
+    clearRefusal();
+    if (!refusal) {
+      refusal = doc.createElement("div");
+      refusal.className = "ar-refusal";
+      refusal.setAttribute("role", "alert");
+    }
+    refusal.textContent = message;
+    doc.body.appendChild(refusal);
+    const box = node.getBoundingClientRect();
+    const view = frame.contentWindow;
+    refusal.style.top = `${box.bottom + view.scrollY + 8}px`;
+    refusal.style.left = `${Math.max(8, box.left + view.scrollX)}px`;
+    refusalTimer = view.setTimeout(clearRefusal, 8000);
   };
 
   // A click on a link always cancels the browser's own navigation — the shell
@@ -134,6 +170,22 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
         textOnFocus = null;
         return;
       }
+      // scripts/validate-content.js would reject some of what can be typed
+      // here, and it runs on the owner's push — long after this editor said
+      // "Saved." Refuse it now, next to the field, and put back what was
+      // there. The input handler above has already written each keystroke
+      // into the draft, so the restore has to undo that too.
+      const rejection = textRejection(node.dataset.edit, text);
+      if (rejection) {
+        const restored = textOnFocus ?? "";
+        node.textContent = restored;
+        draft.write(node.dataset.edit, restored);
+        textOnFocus = null;
+        showRefusal(node, rejection);
+        onDirty();
+        return;
+      }
+      clearRefusal();
       textOnFocus = null;
       draft.write(node.dataset.edit, text);
       // Push the committed value into every other node sharing this spec so
@@ -176,6 +228,7 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
   return {
     detach() {
       listeners.forEach((remove) => remove());
+      clearRefusal();
       style.remove();
       doc.querySelectorAll("[contenteditable]").forEach((node) => node.removeAttribute("contenteditable"));
     }
