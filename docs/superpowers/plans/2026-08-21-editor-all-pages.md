@@ -242,7 +242,9 @@ git commit -m "feat(editor): hold all four data files in the draft"
 ### Task 2: Worker returns all four data files
 
 **Files:**
-- Modify: `worker/src/worker.js`, `worker/src/worker.test.mjs`
+- Modify: `worker/src/worker.js`, `worker/src/worker.test.mjs`, `scripts/dev-editor-api.mjs`
+
+**Why the dev harness is in this task:** `scripts/dev-editor-api.mjs` is the local stand-in the browser verification in Task 11 runs against, and it speaks the same contract as the Worker on purpose. If only the Worker moves to the multi-file shape, the harness diverges and local testing breaks at sign-in — which would not be discovered until Task 11, after every annotation task had been built on top of it. The two change together or not at all.
 
 **Interfaces:**
 - Consumes: `github`, `authorize`, `requireSecrets` (existing).
@@ -361,12 +363,33 @@ function decodeBase64Utf8(content) {
 Run: `node --test worker/src/worker.test.mjs`
 Expected: PASS. Existing tests that asserted `body.site` must be updated to `body.files.site` — that is a rename of the same assertion, not a weakening.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Move the dev harness to the same contract**
+
+In `scripts/dev-editor-api.mjs`:
+
+- Replace the single `SITE_JSON_PATH` and `state.site` with all four files. Read each of `_data/{site,readings,podcasts,memes}.json` at startup into `state.files`, keyed by name.
+- `GET /content` returns `{ files: state.files, baseCommitSha: state.head }` — matching the Worker exactly.
+- `PUT /content` already iterates the payload's `files` array and writes each allowed path; confirm it writes any of the four `_data/*.json` names rather than only `site.json`, and that it updates the matching entry in `state.files` so a later `GET` returns current content.
+- Update the startup banner and the undo command it prints: the undo is now `git checkout -- _data/ && git clean -fd assets/uploads`, because a save can touch any of the four files.
+- Keep the existing path allowlist, the `GET /` explainer, and the `EADDRINUSE` handling exactly as they are.
+
+- [ ] **Step 6: Verify the harness matches the Worker's shape**
+
+Start it on a spare port, then:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8799/auth -H 'content-type: application/json' -d '{"password":"test-password"}' | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).token))")
+curl -s http://localhost:8799/content -H "authorization: Bearer $TOKEN" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('keys:',Object.keys(j).sort().join(','));console.log('files:',Object.keys(j.files).sort().join(','))})"
+```
+
+Expected: `keys: baseCommitSha,files` and `files: memes,podcasts,readings,site`. Stop the harness and confirm nothing is left listening. Paste this output into your report.
+
+- [ ] **Step 7: Commit**
 
 Run: `npm run check`
 
 ```bash
-git add worker/src/worker.js worker/src/worker.test.mjs
+git add worker/src/worker.js worker/src/worker.test.mjs scripts/dev-editor-api.mjs
 git commit -m "feat(worker): return all four data files from GET /content"
 ```
 
