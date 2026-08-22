@@ -49,7 +49,7 @@ async function start() {
   workspace.hidden = false;
   setStatus("Loading…");
   const content = await api.loadContent();
-  draft = createDraft(content.site, content.baseCommitSha);
+  draft = createDraft(content.files, content.baseCommitSha);
   frame.addEventListener("load", () => {
     if (!draft) return;
     if (overlay) overlay.detach();
@@ -169,7 +169,7 @@ saveButton.addEventListener("click", async () => {
 
   try {
     const content = await api.loadContent();
-    draft = createDraft(content.site, content.baseCommitSha);
+    draft = createDraft(content.files, content.baseCommitSha);
     if (overlay) overlay.detach();
     overlay = attachOverlay({ frame, draft, onDirty, onImageClick });
     // onDirty() re-derives status/button state from the fresh (clean) draft,
