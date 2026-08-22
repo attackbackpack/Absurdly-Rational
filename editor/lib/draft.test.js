@@ -15,46 +15,100 @@ const site = () => ({
   }
 });
 
+// Wraps the pre-existing single-file `site()` fixture into the multi-file
+// shape createDraft now takes, so the existing tests below stay unchanged
+// apart from their construction line.
+const withSite = () => ({ site: site(), readings: {}, podcasts: {}, memes: {} });
+
+const files = () => ({
+  site: { home: { hero: { thesis: "old" } }, footer: { note: "footer old" } },
+  readings: { page: { title: "Readings" }, posts: [{ url: "https://a", title: "A" }] },
+  podcasts: { page: { title: "Podcasts" }, guests: [{ key: "g1", title: "G1" }] },
+  memes: { page: { title: "Memes" }, items: [{ key: "m1", title: "M1" }] }
+});
+
 test("a fresh draft is not dirty", () => {
-  assert.equal(createDraft(site(), "abc").isDirty(), false);
+  assert.equal(createDraft(withSite(), "abc").isDirty(), false);
 });
 
 test("read returns the current value", () => {
-  assert.equal(createDraft(site(), "abc").read("site:home.hero.thesis"), "old");
+  assert.equal(createDraft(withSite(), "abc").read("site:home.hero.thesis"), "old");
 });
 
 test("write marks the draft dirty and read reflects it", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   draft.write("site:home.hero.thesis", "new");
   assert.equal(draft.isDirty(), true);
   assert.equal(draft.read("site:home.hero.thesis"), "new");
 });
 
 test("writing the same value back does not mark the draft dirty", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   draft.write("site:home.hero.thesis", "old");
   assert.equal(draft.isDirty(), false);
 });
 
 test("the draft never mutates the object it was given", () => {
-  const original = site();
+  const original = withSite();
   const draft = createDraft(original, "abc");
   draft.write("site:home.hero.thesis", "new");
-  assert.equal(original.home.hero.thesis, "old");
+  assert.equal(original.site.home.hero.thesis, "old");
+});
+
+test("reads and writes across all four files", () => {
+  const d = createDraft(files(), "abc");
+  assert.equal(d.read("readings:posts[url=https://a].title"), "A");
+  d.write("memes:items[key=m1].title", "M1 edited");
+  assert.equal(d.read("memes:items[key=m1].title"), "M1 edited");
+});
+
+test("buildPayload emits only the files that changed", () => {
+  const d = createDraft(files(), "abc");
+  d.write("readings:page.title", "Selected Readings");
+  const paths = d.buildPayload("m").files.map((f) => f.path);
+  assert.deepEqual(paths, ["_data/readings.json"]);
+});
+
+test("buildPayload emits several files when several changed", () => {
+  const d = createDraft(files(), "abc");
+  d.write("readings:page.title", "X");
+  d.write("site:footer.note", "Y");
+  const paths = d.buildPayload("m").files.map((f) => f.path).sort();
+  assert.deepEqual(paths, ["_data/readings.json", "_data/site.json"]);
+});
+
+test("an unknown data file is rejected", () => {
+  const d = createDraft(files(), "abc");
+  assert.throws(() => d.read("nope:page.title"), /nope/);
+});
+
+test("isDirty is false until a real change", () => {
+  const d = createDraft(files(), "abc");
+  d.write("site:home.hero.thesis", "old");
+  assert.equal(d.isDirty(), false);
+  d.write("site:home.hero.thesis", "new");
+  assert.equal(d.isDirty(), true);
+});
+
+test("the draft never mutates the object it was given", () => {
+  const original = files();
+  const d = createDraft(original, "abc");
+  d.write("readings:page.title", "changed");
+  assert.equal(original.readings.page.title, "Readings");
 });
 
 test("write works through an array key match", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   draft.write("site:home.formats[key=readings].title", "Essays");
   assert.equal(draft.read("site:home.formats[key=readings].title"), "Essays");
 });
 
 test("buildPayload is empty when nothing changed", () => {
-  assert.deepEqual(createDraft(site(), "abc").buildPayload("m").files, []);
+  assert.deepEqual(createDraft(withSite(), "abc").buildPayload("m").files, []);
 });
 
 test("buildPayload includes site.json once when a field changed", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   draft.write("site:home.hero.thesis", "new");
   const payload = draft.buildPayload("edit");
   assert.equal(payload.files.length, 1);
@@ -64,7 +118,7 @@ test("buildPayload includes site.json once when a field changed", () => {
 });
 
 test("buildPayload round-trips non-ASCII content through base64", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   draft.write("site:home.hero.thesis", "Reality’s footnotes — better");
   const encoded = draft.buildPayload("edit").files[0].contentBase64;
   const decoded = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
@@ -72,15 +126,15 @@ test("buildPayload round-trips non-ASCII content through base64", () => {
 });
 
 test("buildPayload matches the repository's existing JSON formatting", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   draft.write("site:home.hero.thesis", "new");
   const text = Buffer.from(draft.buildPayload("m").files[0].contentBase64, "base64").toString("utf8");
-  assert.equal(text.endsWith("\n"), false, "_data/site.json has no trailing newline");
+  assert.equal(text.endsWith("\n"), true, "_data/site.json ends with a trailing newline");
   assert.ok(text.includes('\n  "home"'), "two-space indent");
 });
 
 test("stageUpload records the file and returns its repository path", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   const repoPath = draft.stageUpload("Rooster Photo.PNG", btoa("bytes"));
   assert.match(repoPath, /^assets\/uploads\//);
   assert.equal(draft.isDirty(), true);
@@ -134,7 +188,7 @@ test("safeUploadName: name of only separators still satisfies the allowlist", ()
 });
 
 test("stageUpload: cleaned-name collisions are deduped and each staged path satisfies the allowlist", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   const a = draft.stageUpload("Rooster Photo.PNG", btoa("one"));
   const b = draft.stageUpload("rooster photo.png", btoa("two"));
   const c = draft.stageUpload("ROOSTER PHOTO.PNG", btoa("three"));
@@ -174,7 +228,7 @@ test("safeUploadName: no cleaned name contains a traversal-shaped run", () => {
 });
 
 test("stageUpload: a dotted name stages at a path the Worker allowlist accepts", () => {
-  const draft = createDraft(site(), "abc");
+  const draft = createDraft(withSite(), "abc");
   const staged = draft.stageUpload("v1..final.jpg", btoa("bytes"));
   assert.equal(staged, "assets/uploads/v1.final.jpg");
   assert.ok(!staged.includes(".."));

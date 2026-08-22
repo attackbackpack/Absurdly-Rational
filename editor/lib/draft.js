@@ -1,6 +1,6 @@
 import { parseSpec, getValue, setValue } from "./paths.js";
 
-const FILE_PATHS = { site: "_data/site.json" };
+const DATA_FILES = ["site", "readings", "podcasts", "memes"];
 
 export function safeUploadName(name) {
   const base = String(name).split("/").pop().split("\\").pop();
@@ -66,26 +66,35 @@ function toBase64(text) {
   return btoa(binary);
 }
 
-export function createDraft(site, baseCommitSha) {
-  const original = JSON.stringify(site);
-  const working = JSON.parse(original);
+export function createDraft(files, baseCommitSha) {
+  const originals = {};
+  const working = {};
+  for (const name of DATA_FILES) {
+    const text = JSON.stringify(files[name] ?? null);
+    originals[name] = text;
+    working[name] = JSON.parse(text);
+  }
   const uploads = new Map();
 
-  const resolve = (spec) => {
+  const locate = (spec) => {
     const { file, segments } = parseSpec(spec);
-    if (file !== "site") throw new Error(`v1 edits site.json only, not "${file}"`);
-    return segments;
+    if (!DATA_FILES.includes(file)) {
+      throw new Error(`"${spec}": unknown data file "${file}"`);
+    }
+    return { file, segments };
   };
 
   return {
     baseCommitSha,
 
     read(spec) {
-      return getValue(working, resolve(spec));
+      const { file, segments } = locate(spec);
+      return getValue(working[file], segments);
     },
 
     write(spec, value) {
-      setValue(working, resolve(spec), value);
+      const { file, segments } = locate(spec);
+      setValue(working[file], segments, value);
     },
 
     stageUpload(fileName, bytesBase64) {
@@ -103,22 +112,26 @@ export function createDraft(site, baseCommitSha) {
       return candidate;
     },
 
+    changedFiles() {
+      return DATA_FILES.filter((name) => JSON.stringify(working[name]) !== originals[name]);
+    },
+
     isDirty() {
-      return uploads.size > 0 || JSON.stringify(working) !== original;
+      return uploads.size > 0 || this.changedFiles().length > 0;
     },
 
     buildPayload(message) {
-      const files = [];
-      if (JSON.stringify(working) !== original) {
-        files.push({
-          path: FILE_PATHS.site,
-          contentBase64: toBase64(JSON.stringify(working, null, 2))
+      const out = [];
+      for (const name of this.changedFiles()) {
+        out.push({
+          path: `_data/${name}.json`,
+          contentBase64: toBase64(JSON.stringify(working[name], null, 2) + "\n")
         });
       }
       for (const [path, contentBase64] of uploads) {
-        files.push({ path, contentBase64 });
+        out.push({ path, contentBase64 });
       }
-      return { files, baseCommitSha, message };
+      return { files: out, baseCommitSha, message };
     }
   };
 }
