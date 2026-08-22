@@ -31,8 +31,29 @@ function readings() {
       date: "2026-01-01",
       title: `Post ${index}`,
       subtitle: "",
+      url: `https://example.com/post-${index}`,
       visible: true
     }))
+  };
+}
+
+function guest(key) {
+  return {
+    key,
+    class_name: "stanford",
+    visible: true,
+    links: [{ label: "Listen", url: "https://example.com", new_tab: true }]
+  };
+}
+
+function memeItem(key) {
+  return {
+    key,
+    layout: "wide",
+    variant: "rooster",
+    visible: true,
+    title: "Title",
+    caption: "Caption"
   };
 }
 
@@ -47,7 +68,7 @@ function baseSite(home = {}) {
 }
 
 /** Runs the real validator over a throwaway repository; returns its output. */
-function validate({ site, uploads = {} }) {
+function validate({ site, uploads = {}, readingsData, podcastsData, memesData }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ar-validate-"));
   try {
     fs.mkdirSync(path.join(root, "scripts"));
@@ -60,9 +81,9 @@ function validate({ site, uploads = {} }) {
       branch: "editor",
       preview_url: "https://absurdlyrational.com/preview/"
     });
-    write("readings.json", readings());
-    write("podcasts.json", { guests: [] });
-    write("memes.json", { items: [] });
+    write("readings.json", readingsData || readings());
+    write("podcasts.json", podcastsData || { guests: [] });
+    write("memes.json", memesData || { items: [] });
     for (const [name, contents] of Object.entries(uploads)) {
       fs.mkdirSync(path.join(root, "assets", "uploads"), { recursive: true });
       fs.writeFileSync(path.join(root, "assets", "uploads", name), contents);
@@ -89,6 +110,9 @@ function validate({ site, uploads = {} }) {
 
 const repoRoot = path.resolve(here, "..");
 const realSite = JSON.parse(fs.readFileSync(path.join(repoRoot, "_data", "site.json"), "utf8"));
+const realReadings = JSON.parse(fs.readFileSync(path.join(repoRoot, "_data", "readings.json"), "utf8"));
+const realPodcasts = JSON.parse(fs.readFileSync(path.join(repoRoot, "_data", "podcasts.json"), "utf8"));
+const realMemes = JSON.parse(fs.readFileSync(path.join(repoRoot, "_data", "memes.json"), "utf8"));
 const indexHtml = fs.readFileSync(path.join(repoRoot, "index.html"), "utf8");
 
 /** The whole element carrying data-edit-image="<spec>" in index.html. */
@@ -273,4 +297,42 @@ test("a non-array formats value is reported rather than crashing", () => {
   const result = validate({ site: baseSite({ formats: "readings" }) });
   assert.equal(result.ok, false);
   assert.match(result.output, /home\.formats: expected a list of formats/);
+});
+
+// --- collection key uniqueness ---
+//
+// The editor addresses collection items by key — podcasts.guests[key=…],
+// memes.items[key=…], readings.posts[url=…]. Two items sharing a key resolve
+// to the same one, so an edit silently lands on the wrong card.
+
+test("a duplicate reading url fails validation", () => {
+  const readingsData = readings();
+  readingsData.posts[1].url = readingsData.posts[0].url;
+  const result = validate({ site: baseSite(), readingsData });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /readings\.json.*posts.*url.*duplicate/i);
+});
+
+test("a duplicate meme key fails validation", () => {
+  const memesData = { items: [memeItem("same-key"), memeItem("same-key")] };
+  const result = validate({ site: baseSite(), memesData });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /memes\.json.*items.*key.*duplicate/i);
+});
+
+test("a duplicate podcast guest key fails validation", () => {
+  const podcastsData = { guests: [guest("same-key"), guest("same-key")] };
+  const result = validate({ site: baseSite(), podcastsData });
+  assert.equal(result.ok, false);
+  assert.match(result.output, /podcasts\.json.*guests.*key.*duplicate/i);
+});
+
+test("the real repository data has no duplicates", () => {
+  const result = validate({
+    site: baseSite(),
+    readingsData: realReadings,
+    podcastsData: realPodcasts,
+    memesData: realMemes
+  });
+  assert.ok(result.ok, result.output);
 });

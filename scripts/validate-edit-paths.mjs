@@ -4,7 +4,18 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseSpec, collectMatches } from "../editor/lib/paths.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const templates = ["index.html"];
+const templates = [
+  "index.html",
+  "readings.html",
+  "readings-evidence.html",
+  "readings-policy.html",
+  "readings-thinking.html",
+  "readings-hospital.html",
+  "podcasts.html",
+  "memes.html",
+  "_includes/nav.html",
+  "_includes/footer.html"
+];
 const ATTRIBUTE = /\bdata-edit(-image)?="([^"]+)"/g;
 
 export function extractSpecs(html) {
