@@ -129,6 +129,10 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
 
   for (const node of doc.querySelectorAll("[data-edit-image]")) {
     on(node, "click", (event) => {
+      // A nested [data-edit] node (e.g. a guest's art_label) already handles
+      // its own click-to-edit; let the caret land there instead of stealing
+      // the click into the image panel, which has no field for that text.
+      if (event.target.closest("[data-edit]")) return;
       event.preventDefault();
       event.stopPropagation();
       onImageClick(node, node.dataset.editImage);
@@ -137,6 +141,10 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
 
   for (const node of doc.querySelectorAll("[data-edit-meme]")) {
     on(node, "click", (event) => {
+      // Same reasoning as the [data-edit-image] handler above: a nested
+      // [data-edit] node (art.kicker / art.stamp) handles its own
+      // click-to-edit, and openMemePanel has no field for that text.
+      if (event.target.closest("[data-edit]")) return;
       event.preventDefault();
       event.stopPropagation();
       onMemeClick(node, node.dataset.editMeme);
