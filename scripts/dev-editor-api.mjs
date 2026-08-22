@@ -8,11 +8,11 @@
 //
 // This script NEVER talks to GitHub. Saves DO persist locally, though: by
 // default a PUT /content writes the received bytes straight to the real
-// working-tree files (_data/site.json and assets/uploads/*) so that
+// working-tree files (_data/*.json and assets/uploads/*) so that
 // "Reload preview" in Jekyll shows the change, the same way it will after a
 // real commit in production. This is a modification of tracked files in
 // your checkout, not a commit — undo it any time with:
-//   git checkout -- _data/site.json && git clean -fd assets/uploads
+//   git checkout -- _data/ && git clean -fd assets/uploads
 // Set DEV_EDITOR_MEMORY_ONLY=1 to fall back to the old behaviour (nothing
 // touches disk, state lives only in process memory and is lost on exit).
 //
@@ -41,7 +41,7 @@ const CONFLICT_MESSAGE =
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "..");
-const SITE_JSON_PATH = path.join(REPO_ROOT, "_data", "site.json");
+const DATA_FILES = ["site", "readings", "podcasts", "memes"];
 
 // Same allowlist shape the real Worker enforces (worker/src/worker.js).
 const ALLOWED_PATHS = [/^_data\/[a-z-]+\.json$/, /^assets\/uploads\/[A-Za-z0-9._-]+$/];
@@ -51,11 +51,16 @@ function isAllowedPath(candidate) {
   return ALLOWED_PATHS.some((pattern) => pattern.test(candidate));
 }
 
-// state.site mirrors current content for GET /content and conflict checks.
+// state.files mirrors current content for GET /content and conflict checks.
 // When PERSIST_TO_DISK is true, the on-disk files are the source of truth
-// after each save; state.site is kept in sync alongside them.
+// after each save; state.files is kept in sync alongside them.
 const state = {
-  site: JSON.parse(fs.readFileSync(SITE_JSON_PATH, "utf8")),
+  files: Object.fromEntries(
+    DATA_FILES.map((name) => [
+      name,
+      JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "_data", `${name}.json`), "utf8"))
+    ])
+  ),
   headSha: crypto.randomUUID()
 };
 const sessions = new Set();
@@ -144,7 +149,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, origin, 401, { error: "Sign in again." });
       return;
     }
-    sendJson(res, origin, 200, { site: state.site, baseCommitSha: state.headSha });
+    sendJson(res, origin, 200, { files: state.files, baseCommitSha: state.headSha });
     return;
   }
 
@@ -199,9 +204,11 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    const siteEntry = files.find((file) => file.path === "_data/site.json");
-    if (siteEntry && typeof siteEntry.contentBase64 === "string") {
-      state.site = JSON.parse(Buffer.from(siteEntry.contentBase64, "base64").toString("utf8"));
+    for (const name of DATA_FILES) {
+      const entry = files.find((file) => file.path === `_data/${name}.json`);
+      if (entry && typeof entry.contentBase64 === "string") {
+        state.files[name] = JSON.parse(Buffer.from(entry.contentBase64, "base64").toString("utf8"));
+      }
     }
     state.headSha = crypto.randomUUID();
 
@@ -230,9 +237,9 @@ server.listen(PORT, () => {
   console.log(`[dev-editor-api] listening on http://localhost:${PORT} — dev stand-in only, never deploy this`);
   if (PERSIST_TO_DISK) {
     console.log(
-      `[dev-editor-api] saves WRITE TO DISK: _data/site.json and assets/uploads/ in this checkout will change.`
+      `[dev-editor-api] saves WRITE TO DISK: _data/ and assets/uploads/ in this checkout will change.`
     );
-    console.log(`[dev-editor-api] undo everything with: git checkout -- _data/site.json && git clean -fd assets/uploads`);
+    console.log(`[dev-editor-api] undo everything with: git checkout -- _data/ && git clean -fd assets/uploads`);
   } else {
     console.log(`[dev-editor-api] DEV_EDITOR_MEMORY_ONLY=1 set — saves stay in memory only, nothing touches disk.`);
   }

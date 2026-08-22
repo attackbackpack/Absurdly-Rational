@@ -180,6 +180,13 @@ test("GET /content returns site.json and the branch head sha", async () => {
         { status: 200 }
       );
     }
+    if (
+      url.includes("/contents/_data/readings.json") ||
+      url.includes("/contents/_data/podcasts.json") ||
+      url.includes("/contents/_data/memes.json")
+    ) {
+      return new Response(JSON.stringify({ content: btoa("{}"), encoding: "base64" }), { status: 200 });
+    }
     throw new Error(`unexpected fetch to ${url}`);
   });
 
@@ -194,7 +201,7 @@ test("GET /content returns site.json and the branch head sha", async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.baseCommitSha, "abc123");
-  assert.equal(body.site.home.hero.thesis, "hi");
+  assert.equal(body.files.site.home.hero.thesis, "hi");
 });
 
 test("GET /content correctly decodes non-ASCII characters in site.json", async () => {
@@ -213,6 +220,13 @@ test("GET /content correctly decodes non-ASCII characters in site.json", async (
         { status: 200 }
       );
     }
+    if (
+      url.includes("/contents/_data/readings.json") ||
+      url.includes("/contents/_data/podcasts.json") ||
+      url.includes("/contents/_data/memes.json")
+    ) {
+      return new Response(JSON.stringify({ content: btoa("{}"), encoding: "base64" }), { status: 200 });
+    }
     throw new Error(`unexpected fetch to ${url}`);
   });
 
@@ -226,7 +240,7 @@ test("GET /content correctly decodes non-ASCII characters in site.json", async (
 
   assert.equal(response.status, 200);
   const body = await response.json();
-  assert.equal(body.site.home.hero.thesis, thesis);
+  assert.equal(body.files.site.home.hero.thesis, thesis);
 });
 
 test("GET /content surfaces a GitHub failure as 502", async () => {
@@ -653,4 +667,63 @@ test("PUT /content with a missing GitHub secret returns 500, not 502, and writes
   const body = await response.json();
   assert.doesNotMatch(body.error, /GITHUB_APP_ID/);
   assert.equal(calls.length, 0);
+});
+
+function mockFourFiles() {
+  const bodies = {
+    site: JSON.stringify({ home: { hero: { thesis: "hi" } } }),
+    readings: JSON.stringify({ page: { title: "R" } }),
+    podcasts: JSON.stringify({ page: { title: "P" } }),
+    memes: JSON.stringify({ page: { title: "M" } })
+  };
+  mock.method(globalThis, "fetch", async (input) => {
+    const url = String(input.url ?? input);
+    if (url.includes("/git/ref/heads/editor")) {
+      return new Response(JSON.stringify({ object: { sha: "abc123" } }), { status: 200 });
+    }
+    for (const name of Object.keys(bodies)) {
+      if (url.includes(`/contents/_data/${name}.json`)) {
+        return new Response(
+          JSON.stringify({ content: btoa(bodies[name]), encoding: "base64" }),
+          { status: 200 }
+        );
+      }
+    }
+    throw new Error(`unexpected fetch to ${url}`);
+  });
+}
+
+test("GET /content returns all four data files", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  mockFourFiles();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/content", { headers: { authorization: await bearer(env) } }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.baseCommitSha, "abc123");
+  assert.deepEqual(Object.keys(body.files).sort(), ["memes", "podcasts", "readings", "site"]);
+  assert.equal(body.files.readings.page.title, "R");
+});
+
+test("GET /content surfaces a failure on any one file as 502", async () => {
+  const env = githubEnv();
+  env.__installationToken = "ghs_test";
+  mock.method(globalThis, "fetch", async (input) => {
+    const url = String(input.url ?? input);
+    if (url.includes("/git/ref/heads/editor")) {
+      return new Response(JSON.stringify({ object: { sha: "abc123" } }), { status: 200 });
+    }
+    if (url.includes("/contents/_data/memes.json")) return new Response("boom", { status: 500 });
+    return new Response(JSON.stringify({ content: btoa("{}"), encoding: "base64" }), { status: 200 });
+  });
+  const response = await worker.fetch(
+    new Request("https://api.example.com/content", { headers: { authorization: await bearer(env) } }),
+    env
+  );
+  mock.restoreAll();
+  assert.equal(response.status, 502);
 });
