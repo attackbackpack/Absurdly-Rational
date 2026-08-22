@@ -4,6 +4,9 @@ import {
   createDraft,
   safeUploadName,
   uploadRejection,
+  uploadTag,
+  commitMessage,
+  describeFiles,
   MAX_UPLOAD_BYTES,
   MAX_UPLOAD_DIMENSION
 } from "./draft.js";
@@ -230,7 +233,7 @@ test("safeUploadName: no cleaned name contains a traversal-shaped run", () => {
 test("stageUpload: a dotted name stages at a path the Worker allowlist accepts", () => {
   const draft = createDraft(withSite(), "abc");
   const staged = draft.stageUpload("v1..final.jpg", btoa("bytes"));
-  assert.equal(staged, "assets/uploads/v1.final.jpg");
+  assert.match(staged, /^assets\/uploads\/v1\.final-[0-9a-z]+\.jpg$/);
   assert.ok(!staged.includes(".."));
   assert.match(staged, ALLOWED_UPLOAD_PATH);
 });
@@ -317,4 +320,202 @@ test("uploadRejection skips the dimension check when dimensions are unknown", ()
 test("uploadRejection reports the extension problem before the size problem", () => {
   const problem = uploadRejection({ name: "huge.heic", size: MAX_UPLOAD_BYTES * 3, width: null, height: null });
   assert.match(problem, /JPG, PNG, or WebP/);
+});
+
+// --- Upload names must not collide with what is already on the editor branch.
+// stageUpload used to de-duplicate only within one session, so two sessions
+// that each uploaded an "image.jpg" produced the same path and the second
+// silently replaced the first.
+
+const ALLOWLIST = /^assets\/uploads\/[A-Za-z0-9._-]+$/;
+
+test("uploadTag is stable for the same bytes and differs for different bytes", () => {
+  assert.equal(uploadTag("AAAA"), uploadTag("AAAA"));
+  assert.notEqual(uploadTag("AAAA"), uploadTag("AAAB"));
+  assert.notEqual(uploadTag(""), uploadTag("A"));
+});
+
+test("uploadTag only ever produces allowlist-safe characters", () => {
+  for (const bytes of ["", "A", btoa("some bytes"), "x".repeat(5000)]) {
+    assert.match(uploadTag(bytes), /^[0-9a-z]+$/, JSON.stringify(bytes.slice(0, 8)));
+  }
+});
+
+test("the same file name from two sessions stages at different paths", () => {
+  const one = createDraft(withSite(), "abc").stageUpload("image.jpg", btoa("guest photo"));
+  const two = createDraft(withSite(), "abc").stageUpload("image.jpg", btoa("show artwork"));
+  assert.notEqual(one, two);
+  assert.match(one, ALLOWLIST);
+  assert.match(two, ALLOWLIST);
+});
+
+test("case-folded names that collide after cleaning still stage apart", () => {
+  const draft = createDraft(withSite(), "abc");
+  const a = draft.stageUpload("IMG_0421.JPG", btoa("one"));
+  const b = draft.stageUpload("img_0421.jpg", btoa("two"));
+  assert.notEqual(a, b);
+});
+
+test("the sanitisation is still applied before the tag is appended", () => {
+  const draft = createDraft(withSite(), "abc");
+  assert.match(
+    draft.stageUpload("C:\\Users\\me\\My Rooster Photo!.PNG", btoa("bytes")),
+    /^assets\/uploads\/my-rooster-photo-[0-9a-z]+\.png$/
+  );
+});
+
+test("staging the identical file twice reuses one path, not two", () => {
+  const draft = createDraft(withSite(), "abc");
+  const a = draft.stageUpload("photo.jpg", btoa("same"));
+  const b = draft.stageUpload("photo.jpg", btoa("same"));
+  assert.equal(a, b);
+  assert.equal(draft.buildPayload("m").files.filter((f) => f.path === a).length, 1);
+});
+
+// --- Re-picking an image in one session must not commit the abandoned file.
+
+test("re-picking for the same slot replaces the staged file", () => {
+  const draft = createDraft(withSite(), "abc");
+  const spec = "site:home.hero.image";
+  const first = draft.stageUpload("one.jpg", btoa("first"), spec);
+  const second = draft.stageUpload("two.jpg", btoa("second"), spec);
+  const paths = draft.buildPayload("m").files.map((f) => f.path);
+  assert.ok(paths.includes(second));
+  assert.ok(!paths.includes(first), "the abandoned file must not be committed");
+});
+
+test("re-picking for one slot leaves another slot's file alone", () => {
+  const draft = createDraft(withSite(), "abc");
+  const hero = draft.stageUpload("hero.jpg", btoa("hero"), "site:home.hero.image");
+  draft.stageUpload("a.jpg", btoa("a"), "site:home.formats[key=readings].image");
+  const b = draft.stageUpload("b.jpg", btoa("b"), "site:home.formats[key=readings].image");
+  const paths = draft.buildPayload("m").files.map((f) => f.path);
+  assert.ok(paths.includes(hero));
+  assert.ok(paths.includes(b));
+  assert.equal(paths.length, 2);
+});
+
+test("one file staged into two slots survives one of them being re-picked", () => {
+  const draft = createDraft(withSite(), "abc");
+  const shared = draft.stageUpload("shared.jpg", btoa("shared"), "site:home.hero.image");
+  assert.equal(draft.stageUpload("shared.jpg", btoa("shared"), "site:home.formats[key=readings].image"), shared);
+  draft.stageUpload("other.jpg", btoa("other"), "site:home.hero.image");
+  const paths = draft.buildPayload("m").files.map((f) => f.path);
+  assert.ok(paths.includes(shared), "the other slot still points at it");
+});
+
+test("staging with no spec keeps the old un-scoped behaviour", () => {
+  const draft = createDraft(withSite(), "abc");
+  const a = draft.stageUpload("one.jpg", btoa("first"));
+  const b = draft.stageUpload("two.jpg", btoa("second"));
+  const paths = draft.buildPayload("m").files.map((f) => f.path);
+  assert.ok(paths.includes(a));
+  assert.ok(paths.includes(b));
+});
+
+// --- The commit message has to say which pages were edited.
+
+test("commitMessage names one file naturally", () => {
+  assert.equal(commitMessage(["site"]), "content(update): homepage edited in the site editor");
+  assert.equal(commitMessage(["memes"]), "content(update): meme bank edited in the site editor");
+});
+
+test("commitMessage names two files with 'and'", () => {
+  assert.equal(
+    commitMessage(["readings", "podcasts"]),
+    "content(update): readings and podcasts edited in the site editor"
+  );
+});
+
+test("commitMessage lists three or four files", () => {
+  assert.equal(
+    commitMessage(["site", "readings", "podcasts"]),
+    "content(update): homepage, readings and podcasts edited in the site editor"
+  );
+  assert.equal(
+    commitMessage(["site", "readings", "podcasts", "memes"]),
+    "content(update): homepage, readings, podcasts and meme bank edited in the site editor"
+  );
+});
+
+test("commitMessage stays sensible with nothing to name", () => {
+  assert.equal(commitMessage([]), "content(update): edited in the site editor");
+  assert.equal(commitMessage(undefined), "content(update): edited in the site editor");
+});
+
+test("commitMessage is derived from what the draft actually changed", () => {
+  const draft = createDraft(
+    { site: site(), readings: { page: { title: "R" } }, podcasts: {}, memes: {} },
+    "abc"
+  );
+  draft.write("readings:page.title", "New");
+  assert.equal(commitMessage(draft.changedFiles()), "content(update): readings edited in the site editor");
+  draft.write("site:home.hero.thesis", "New");
+  assert.equal(
+    commitMessage(draft.changedFiles()),
+    "content(update): homepage and readings edited in the site editor"
+  );
+});
+
+test("describeFiles names the pages a reload would cost", () => {
+  assert.equal(describeFiles(["site", "memes"]), "homepage and meme bank");
+  assert.equal(describeFiles([]), "");
+});
+
+// --- A 409 must not cost four files of work when the conflict is elsewhere.
+
+const multi = () => ({
+  site: site(),
+  readings: { page: { title: "Readings" } },
+  podcasts: { page: { title: "Podcasts" } },
+  memes: { page: { title: "Memes" } }
+});
+
+test("rebase adopts a remote change to a file this draft never touched", () => {
+  const draft = createDraft(multi(), "abc");
+  draft.write("readings:page.title", "Mine");
+  const remote = multi();
+  remote.memes.page.title = "Theirs";
+  const result = draft.rebase(remote, "def");
+  assert.deepEqual(result, { ok: true, files: [] });
+  assert.equal(draft.baseCommitSha, "def");
+  assert.equal(draft.read("readings:page.title"), "Mine", "my edit survives");
+  assert.equal(draft.read("memes:page.title"), "Theirs", "their edit is taken");
+  assert.deepEqual(draft.changedFiles(), ["readings"], "only my file is still pending");
+});
+
+test("rebase refuses when the same file changed on both sides, and changes nothing", () => {
+  const draft = createDraft(multi(), "abc");
+  draft.write("readings:page.title", "Mine");
+  const remote = multi();
+  remote.readings.page.title = "Theirs";
+  const result = draft.rebase(remote, "def");
+  assert.deepEqual(result, { ok: false, files: ["readings"] });
+  assert.equal(draft.baseCommitSha, "abc", "the draft still targets the head it knows");
+  assert.equal(draft.read("readings:page.title"), "Mine", "nothing is discarded");
+});
+
+test("rebase names every conflicting file", () => {
+  const draft = createDraft(multi(), "abc");
+  draft.write("readings:page.title", "Mine");
+  draft.write("memes:page.title", "Mine");
+  const remote = multi();
+  remote.readings.page.title = "Theirs";
+  remote.memes.page.title = "Theirs";
+  remote.podcasts.page.title = "Theirs";
+  assert.deepEqual(draft.rebase(remote, "def").files, ["readings", "memes"]);
+});
+
+test("rebase re-points buildPayload at the new head", () => {
+  const draft = createDraft(multi(), "abc");
+  draft.write("readings:page.title", "Mine");
+  draft.rebase(multi(), "def");
+  assert.equal(draft.buildPayload("m").baseCommitSha, "def");
+});
+
+test("a rebased draft still knows it is dirty", () => {
+  const draft = createDraft(multi(), "abc");
+  draft.write("readings:page.title", "Mine");
+  draft.rebase(multi(), "def");
+  assert.equal(draft.isDirty(), true);
 });

@@ -1,5 +1,5 @@
 import { createApi } from "./lib/api.js";
-import { createDraft } from "./lib/draft.js";
+import { createDraft, commitMessage, describeFiles } from "./lib/draft.js";
 import { attachOverlay } from "./lib/overlay.js";
 import { openImagePanel, openMemePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
 import { resolvePreviewPath } from "./lib/preview.js";
@@ -48,7 +48,19 @@ function onImageClick(anchor, spec) {
 }
 
 function onMemeClick(anchor, spec) {
-  openMemePanel({ anchor, spec, draft, onDirty });
+  // The meme frame carries data-edit-meme, so it cannot also carry
+  // data-edit-image without two handlers fighting over one click. The panel
+  // hands off to the image panel instead. A meme's picture is shown in the
+  // dialog with item.image.alt as its alt text (see main.js), so it is a
+  // meaningful image and needs a description — never decorative.
+  openMemePanel({
+    anchor,
+    spec,
+    draft,
+    onDirty,
+    onEditImage: (imageAnchor, imageSpec) =>
+      openImagePanel({ anchor: imageAnchor, spec: imageSpec, draft, onDirty, decorative: false })
+  });
 }
 
 // Navigating does not discard anything: `draft` is a single module-level
@@ -160,6 +172,27 @@ document.getElementById("settings-button").addEventListener("click", () => {
   openSettingsPanel({ draft, onDirty, page });
 });
 
+async function handleConflict() {
+  const pending = describeFiles(draft.changedFiles());
+  let content;
+  try {
+    content = await api.loadContent();
+  } catch {
+    setStatus(
+      `Someone else changed the draft, and the editor could not read the new version. Do not reload — that would discard your unsaved changes to the ${pending}. Copy anything you want to keep, then reload and paste it back.`
+    );
+    return;
+  }
+  const result = draft.rebase(content.files, content.baseCommitSha);
+  if (result.ok) {
+    setStatus("Someone else changed a different part of the site. Your changes are still here — press Save again.");
+    return;
+  }
+  setStatus(
+    `Someone else changed the ${describeFiles(result.files)} while you were editing, and so did you. Saving now would undo their change. Your unsaved changes to the ${pending} are still on screen — copy anything you want to keep, then reload and paste it back.`
+  );
+}
+
 saveButton.addEventListener("click", async () => {
   // A panel left open keeps writing into whatever `draft` object it closed
   // over at open time; after a successful save that object is replaced out
@@ -171,10 +204,17 @@ saveButton.addEventListener("click", async () => {
   setStatus("Saving…");
 
   try {
-    await api.save(draft.buildPayload("content(update): homepage edited in the site editor"));
+    await api.save(draft.buildPayload(commitMessage(draft.changedFiles())));
   } catch (error) {
     if (error.status === 409) {
-      setStatus("Someone else changed the draft. Reload the page before saving again.");
+      // "Reload before saving again" now costs up to four files of work, so it
+      // must not be the first answer. Most conflicts are not real ones: the
+      // other writer touched a file this draft never edited, and the edits
+      // still apply cleanly to the newer branch head. Try that first, and only
+      // if the SAME file changed on both sides say so — naming exactly what a
+      // reload would throw away.
+      setStatus("Someone else changed the draft — checking whether your work still fits…");
+      await handleConflict();
       saveButton.disabled = false;
     } else if (error.status === 401) {
       // The save itself never went through, so it is genuinely unsaved — but
@@ -218,7 +258,11 @@ saveButton.addEventListener("click", async () => {
 });
 
 reloadButton.addEventListener("click", () => {
-  if (draft && draft.isDirty() && !confirm("Reloading discards unsaved changes. Continue?")) return;
+  if (draft && draft.isDirty()) {
+    const pending = describeFiles(draft.changedFiles());
+    const cost = pending ? `your unsaved changes to the ${pending}` : "your unsaved changes";
+    if (!confirm(`Reloading discards ${cost}. Continue?`)) return;
+  }
   location.reload();
 });
 
