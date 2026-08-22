@@ -51,13 +51,16 @@ function onMemeClick(anchor, spec) {
   openMemePanel({ anchor, spec, draft, onDirty });
 }
 
+// Navigating does not discard anything: `draft` is a single module-level
+// object shared across every page, keyed by JSON path rather than by which
+// page is on screen, and every write into it (the input handler on each
+// keystroke, blur's normalize-and-commit, and every panel field's change
+// handler) happens synchronously, before this function can ever run. There
+// is nothing "in flight" for a click to lose, so no confirmation belongs
+// here — unlike beforeunload and the Reload-preview confirm below, which
+// guard against a real loss (leaving the editor entirely / reloading the
+// module and losing the in-memory draft) and must keep their weight.
 function onNavigate(href) {
-  if (draft && draft.isDirty()) {
-    const proceed = confirm(
-      "You have unsaved changes on this page. Leaving now discards them.\n\nSave first, or press Cancel to stay."
-    );
-    if (!proceed) return;
-  }
   closePanel();
   frame.src = href;
 }
@@ -72,8 +75,13 @@ frame.addEventListener("load", () => {
   overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
   const page = frame.contentDocument?.body?.dataset.page || "";
   toolbarTitle.textContent = `Editing the draft ${PAGE_NAMES[page] || "site"}`;
+  // onDirty() alone is authoritative for status: "Unsaved changes" when the
+  // draft carried unsaved edits across this navigation, "" when it didn't
+  // (which also covers clearing the initial "Loading…" message on first
+  // load). An unconditional setStatus("") here used to run right after it
+  // and always won, blanking the status even when the draft was dirty — so
+  // the save button read "enabled" while the status read blank.
   onDirty();
-  setStatus("");
 });
 
 async function start() {
