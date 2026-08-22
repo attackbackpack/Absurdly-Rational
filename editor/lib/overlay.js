@@ -1,5 +1,5 @@
 import { normalizeEditText, editTextChanged } from "./editText.js";
-import { isInternalHref } from "./links.js";
+import { isInternalHref, fragmentId } from "./links.js";
 
 const OVERLAY_STYLE = `
 [data-edit], [data-edit-image], [data-edit-meme] { outline-offset: 3px; cursor: text; }
@@ -32,6 +32,18 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
     event.preventDefault();
     if (event.target.closest("[data-edit]")) return;
     const href = link.getAttribute("href") || "";
+    // A fragment (e.g. the homepage hero button's "#formats") names a spot on
+    // this same document, not a page to load. Assigning it to frame.src would
+    // resolve against the editor shell's own URL, not this document's, and
+    // misnavigate the preview into the editor's own page — so it must never
+    // reach onNavigate. Scroll to the match instead, and never prompt about
+    // unsaved work for it, since nothing is being discarded.
+    const id = fragmentId(href);
+    if (id !== null) {
+      const target = id && doc.getElementById(id);
+      if (target) target.scrollIntoView();
+      return;
+    }
     if (!isInternalHref(href)) return;
     onNavigate(href);
   }, true);
