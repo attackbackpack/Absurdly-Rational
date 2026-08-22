@@ -254,6 +254,48 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   present(root, box);
 }
 
+export function openMemePanel({ anchor, spec, draft, onDirty }) {
+  const { root, close } = panelRoot();
+  const box = document.createElement("div");
+  box.className = "ar-panel-box";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Meme";
+  box.appendChild(heading);
+
+  const note = document.createElement("p");
+  note.className = "ar-notice";
+  note.textContent = "Title and caption appear when someone opens this meme, not on the wall.";
+  box.appendChild(note);
+
+  for (const [suffix, label, type] of [
+    ["title", "Title", "text"],
+    ["caption", "Caption", "textarea"],
+    ["art.headline", "Artwork headline", "textarea"],
+    ["art.accent", "Artwork accent", "textarea"]
+  ]) {
+    let current;
+    try {
+      current = draft.read(`${spec}.${suffix}`);
+    } catch {
+      continue;
+    }
+    box.appendChild(
+      field(label, current, (value) => {
+        draft.write(`${spec}.${suffix}`, value);
+        onDirty();
+      }, type)
+    );
+  }
+
+  const done = document.createElement("button");
+  done.textContent = "Done";
+  done.addEventListener("click", close);
+  box.appendChild(done);
+
+  present(root, box);
+}
+
 export function openSettingsPanel({ draft, onDirty }) {
   const { root, close } = panelRoot();
   const box = document.createElement("div");

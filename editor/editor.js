@@ -1,7 +1,7 @@
 import { createApi } from "./lib/api.js";
 import { createDraft } from "./lib/draft.js";
 import { attachOverlay } from "./lib/overlay.js";
-import { openImagePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
+import { openImagePanel, openMemePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
 import { resolvePreviewPath } from "./lib/preview.js";
 import { resolveApiBase } from "./lib/apibase.js";
 
@@ -44,6 +44,10 @@ function onImageClick(anchor, spec) {
   });
 }
 
+function onMemeClick(anchor, spec) {
+  openMemePanel({ anchor, spec, draft, onDirty });
+}
+
 async function start() {
   signin.hidden = true;
   workspace.hidden = false;
@@ -53,7 +57,7 @@ async function start() {
   frame.addEventListener("load", () => {
     if (!draft) return;
     if (overlay) overlay.detach();
-    overlay = attachOverlay({ frame, draft, onDirty, onImageClick });
+    overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick });
     onDirty();
     setStatus("");
   });
@@ -171,7 +175,7 @@ saveButton.addEventListener("click", async () => {
     const content = await api.loadContent();
     draft = createDraft(content.files, content.baseCommitSha);
     if (overlay) overlay.detach();
-    overlay = attachOverlay({ frame, draft, onDirty, onImageClick });
+    overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick });
     // onDirty() re-derives status/button state from the fresh (clean) draft,
     // which would clear the success message we just set — restore it after.
     onDirty();
