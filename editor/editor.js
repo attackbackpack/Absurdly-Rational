@@ -126,7 +126,9 @@ document.getElementById("settings-button").addEventListener("click", () => {
   // The workspace can now be on screen with no draft behind it: showLoadFailure
   // keeps it visible so a server error is readable. There is nothing to edit.
   if (!draft) return;
-  openSettingsPanel({ draft, onDirty });
+  const doc = frame.contentDocument;
+  const page = doc && doc.body ? doc.body.dataset.page : "";
+  openSettingsPanel({ draft, onDirty, page });
 });
 
 saveButton.addEventListener("click", async () => {

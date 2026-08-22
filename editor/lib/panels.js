@@ -1,15 +1,6 @@
 import { FITS, FOCUSES, fitClass, focusClass } from "./imagefit.js";
 import { uploadRejection } from "./draft.js";
-
-const LINK_FIELDS = [["site:home.hero.cta_url", "Hero button link"]];
-
-const SEO_FIELDS = [
-  ["site:home.seo.title", "Search result title"],
-  ["site:home.seo.description", "Search result description"],
-  ["site:home.seo.og_title", "Social share title"],
-  ["site:home.seo.og_description", "Social share description"],
-  ["site:home.seo.twitter_description", "Twitter description"]
-];
+import { fieldsForPage } from "./pagefields.js";
 
 let closeOpenPanel = null;
 
@@ -296,16 +287,18 @@ export function openMemePanel({ anchor, spec, draft, onDirty }) {
   present(root, box);
 }
 
-export function openSettingsPanel({ draft, onDirty }) {
+export function openSettingsPanel({ draft, onDirty, page }) {
   const { root, close } = panelRoot();
   const box = document.createElement("div");
   box.className = "ar-panel-box";
 
+  const { links, seo } = fieldsForPage(page);
+
   const heading = document.createElement("h2");
-  heading.textContent = "Page settings";
+  heading.textContent = page ? `Page settings — ${page[0].toUpperCase()}${page.slice(1)}` : "Page settings";
   box.appendChild(heading);
 
-  for (const [spec, label] of LINK_FIELDS) {
+  for (const [spec, label] of links) {
     box.appendChild(
       field(label, draft.read(spec), (value) => {
         draft.write(spec, value);
@@ -319,7 +312,7 @@ export function openSettingsPanel({ draft, onDirty }) {
   note.textContent = "The rest do not appear on the page. They are what search engines and social sites show.";
   box.appendChild(note);
 
-  for (const [spec, label] of SEO_FIELDS) {
+  for (const [spec, label] of seo) {
     box.appendChild(
       field(
         label,
