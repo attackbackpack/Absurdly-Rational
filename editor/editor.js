@@ -19,6 +19,9 @@ const frame = document.getElementById("preview");
 const status = document.getElementById("status");
 const saveButton = document.getElementById("save-button");
 const reloadButton = document.getElementById("reload-button");
+const toolbarTitle = document.getElementById("toolbar-title");
+
+const PAGE_NAMES = { home: "homepage", readings: "readings", podcasts: "podcasts", memes: "meme bank" };
 
 let draft = null;
 let overlay = null;
@@ -48,19 +51,37 @@ function onMemeClick(anchor, spec) {
   openMemePanel({ anchor, spec, draft, onDirty });
 }
 
+function onNavigate(href) {
+  if (draft && draft.isDirty()) {
+    const proceed = confirm(
+      "You have unsaved changes on this page. Leaving now discards them.\n\nSave first, or press Cancel to stay."
+    );
+    if (!proceed) return;
+  }
+  closePanel();
+  frame.src = href;
+}
+
+// Registered once, outside start(): start() can run again (e.g. after a 401
+// during the initial content load, then a successful retry), and a listener
+// added inside its body would stack another one on every re-entry, attaching
+// duplicate overlays to the same document on every later load.
+frame.addEventListener("load", () => {
+  if (!draft) return;
+  if (overlay) overlay.detach();
+  overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
+  const page = frame.contentDocument?.body?.dataset.page || "";
+  toolbarTitle.textContent = `Editing the draft ${PAGE_NAMES[page] || "site"}`;
+  onDirty();
+  setStatus("");
+});
+
 async function start() {
   signin.hidden = true;
   workspace.hidden = false;
   setStatus("Loading…");
   const content = await api.loadContent();
   draft = createDraft(content.files, content.baseCommitSha);
-  frame.addEventListener("load", () => {
-    if (!draft) return;
-    if (overlay) overlay.detach();
-    overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick });
-    onDirty();
-    setStatus("");
-  });
   frame.src = previewUrl;
 }
 
@@ -177,7 +198,7 @@ saveButton.addEventListener("click", async () => {
     const content = await api.loadContent();
     draft = createDraft(content.files, content.baseCommitSha);
     if (overlay) overlay.detach();
-    overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick });
+    overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
     // onDirty() re-derives status/button state from the fresh (clean) draft,
     // which would clear the success message we just set — restore it after.
     onDirty();

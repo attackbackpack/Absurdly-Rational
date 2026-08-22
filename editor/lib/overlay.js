@@ -1,4 +1,5 @@
 import { normalizeEditText, editTextChanged } from "./editText.js";
+import { isInternalHref } from "./links.js";
 
 const OVERLAY_STYLE = `
 [data-edit], [data-edit-image], [data-edit-meme] { outline-offset: 3px; cursor: text; }
@@ -8,7 +9,7 @@ const OVERLAY_STYLE = `
 [data-edit]:focus { outline: 2px solid rgba(111,123,255,1); background: rgba(111,123,255,.08); }
 `;
 
-export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick }) {
+export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate }) {
   const doc = frame.contentDocument;
   const style = doc.createElement("style");
   style.textContent = OVERLAY_STYLE;
@@ -20,10 +21,19 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
     listeners.push(() => target.removeEventListener(type, handler, options));
   };
 
-  // Links must not navigate while editing.
+  // A click on a link always cancels the browser's own navigation — the shell
+  // decides whether to follow it instead, so it can guard unsaved work first.
+  // The [data-edit] check must run first: hero.cta_label, context.contact_label,
+  // and every nav label are spans nested inside an <a>, and a click there is
+  // meant to place a caret, not navigate.
   on(doc, "click", (event) => {
     const link = event.target.closest("a");
-    if (link) event.preventDefault();
+    if (!link) return;
+    event.preventDefault();
+    if (event.target.closest("[data-edit]")) return;
+    const href = link.getAttribute("href") || "";
+    if (!isInternalHref(href)) return;
+    onNavigate(href);
   }, true);
 
   // The same field can render more than once on a page (e.g. the nav
