@@ -122,6 +122,100 @@ One thing that looks broken but isn't: adding a **first** image where built-in d
 artwork currently shows will not preview inline immediately — it only appears after a save and
 a rebuild of the site.
 
+## Verifying across every page
+
+The checks above cover one page in isolation. This section walks the editor across all four page
+templates — homepage, readings index, a reading topic page, podcasts, memes — and the navigation
+between them. Run it at level 1 (the dev harness above): `npm run dev:editor-api` in one
+terminal, `bundle exec jekyll serve --port 4000` in another, signed in at
+`http://localhost:4000/editor/?preview=/index.html`. Like everything else at level 1, working
+through this list proves the editor's read/edit/save/render loop across pages — it proves nothing
+about GitHub, the real password, or the Worker's write-path allowlist. Run the same checklist at
+level 2 or 3 if you need that proof.
+
+### Check this first: does the preview actually scroll?
+
+Homepage and podcasts run well past one screen of content, so before working through anything
+below, confirm you can scroll the preview pane (mouse wheel, trackpad, or dragging the scrollbar)
+on at least one of those pages.
+
+This is flagged first because during automated verification of this feature, the preview iframe
+would not scroll programmatically — about 2810px of page content in a 655px frame, with
+`scrollTop` refusing to move no matter what was tried — even though the identical page scrolled
+normally in an ordinary browser tab. It was not possible to tell from that environment whether
+this is a real defect or an artifact of driving the page by automation rather than a human hand
+on a mouse. If scrolling works normally for you here, treat that finding as closed and move on. If
+it genuinely does not scroll — if you can only ever reach the top of each page no matter what you
+try — stop and report it; that would be a blocking bug, since most of the checks below assume you
+can reach content further down the page.
+
+### Per-page checks
+
+**Homepage**
+- [ ] Sign in and confirm the page has 28 editable text regions and 4 image frames reachable by
+  hovering (the exact count is a snapshot of the current homepage — if content has been added or
+  removed since, expect the count to have moved accordingly, not to be wrong).
+- [ ] The toolbar title reads "Editing the draft homepage."
+- [ ] Click the "Choose your format" control (`#formats`). It should scroll the preview to that
+  section in place. It must **not** load the editor itself into the preview pane — that was a
+  real bug (a bare `#fragment` href resolving against the parent document instead of the iframe),
+  fixed in Task 10; confirm it stays fixed.
+- [ ] Click an external link if one is visible (Substack, Spotify, LinkedIn). Nothing should
+  happen — no navigation, no new tab.
+
+**Readings index**
+- [ ] Click the readings nav link. The preview navigates, the overlay re-attaches (hover and click
+  still work on the new page), and the toolbar title updates to "Editing the draft readings."
+- [ ] Make one text edit here and leave it unsaved — you'll save it together with a podcasts edit
+  in the cross-file check below.
+
+**A reading topic page**
+- [ ] Click into one topic ("door") from the readings index. The toolbar title updates again and
+  the overlay is live on the topic page.
+
+**Podcasts**
+- [ ] Navigate to podcasts. Toolbar title updates to "Editing the draft podcasts."
+- [ ] Edit the footer text (any page's footer works for this — editing it here, with the readings
+  edit above still pending, is what the cross-file check needs).
+
+**Memes**
+- [ ] Navigate to memes. Toolbar title updates to "Editing the draft meme bank." Confirm 6 tiles
+  are visible.
+- [ ] Click a tile. A panel opens with four fields: Title, Caption, Artwork headline, Artwork
+  accent.
+- [ ] Press Escape. The panel closes.
+
+### Navigation, more generally
+
+- [ ] With the draft still dirty from the edits above, move between pages several times
+  (homepage, readings, a topic page, podcasts, memes, and back). Navigating must **not** prompt
+  about discarding unsaved work, and must not lose it — the draft spans all four data files, so an
+  edit made on readings has to survive a trip through podcasts and memes and back.
+- [ ] The "Unsaved changes" indicator stays visible on every page you land on while the draft is
+  dirty — check it doesn't go blank after a navigation even though Save is still enabled.
+
+### The cross-file save
+
+- [ ] With the readings edit and the podcasts footer edit both still pending, press Save once.
+- [ ] Check `git diff` afterward: exactly two files should have changed — `_data/readings.json`
+  and `_data/site.json` — each with exactly one changed line and no reflow or reformatting
+  elsewhere in either file.
+- [ ] Undo the test edits before committing anything else, per the note in section 1 above:
+  ```bash
+  git checkout -- _data/site.json _data/readings.json
+  ```
+
+### The two guards that actually matter
+
+Unlike navigation between pages (which should *not* interrupt you), these two exist specifically
+to stop you from losing work by accident, and both should fire every time:
+
+- [ ] With a dirty draft, use "Reload preview." Confirm it prompts — "Reloading discards unsaved
+  changes. Continue?" or equivalent wording — and that Cancel keeps your edit while proceeding
+  discards it.
+- [ ] With a dirty draft, close or reload the browser tab itself. The browser's native
+  leave-site warning should appear.
+
 ## Troubleshooting
 
 - **`EADDRINUSE` on port 4000 or 8788.** Something is already listening there — probably a

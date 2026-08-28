@@ -252,6 +252,25 @@ function validateText(value, location) {
   }
 }
 
+// The editor addresses collection items by key — podcasts.guests[key=…],
+// memes.items[key=…], readings.posts[url=…]. A duplicate key makes two items
+// resolve to the same one, so an edit silently lands on the wrong card.
+function requireUniqueKey(items, keyField, location) {
+  const seen = new Map();
+  (items || []).forEach((item, index) => {
+    const value = item && item[keyField];
+    if (typeof value !== "string" || !value.trim()) {
+      fail(`${location}[${index}].${keyField}: a non-empty ${keyField} is required`);
+      return;
+    }
+    if (seen.has(value)) {
+      fail(`${location}[${index}].${keyField}: duplicate ${keyField} "${value}" (also at index ${seen.get(value)})`);
+      return;
+    }
+    seen.set(value, index);
+  });
+}
+
 const site = readJson("_data/site.json");
 const editorGuide = readJson("_data/editor-guide.json");
 const readings = readJson("_data/readings.json");
@@ -334,6 +353,7 @@ if (readings) {
       fail(`${location}.visible: use a boolean`);
     }
   });
+  requireUniqueKey(readings.posts, "url", "_data/readings.json.posts");
 }
 
 if (podcasts) {
@@ -348,6 +368,7 @@ if (podcasts) {
       fail(`_data/podcasts.json.guests[${index}].visible: use a boolean`);
     }
   });
+  requireUniqueKey(podcasts.guests, "key", "_data/podcasts.json.guests");
 }
 
 if (memes) {
@@ -369,6 +390,7 @@ if (memes) {
       fail(`${location}.caption: caption is required`);
     }
   });
+  requireUniqueKey(memes.items, "key", "_data/memes.json.items");
 }
 
 validateUploadDirectory(path.join(root, "assets", "uploads"));

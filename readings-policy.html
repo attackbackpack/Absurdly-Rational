@@ -12,17 +12,17 @@ topic: policy
   {% include nav.html current="readings" %}
 
   <main class="page-shell reading-topic-shell">
-    <a class="back-link" href="{{ "/readings.html" | relative_url }}"><span class="back-arrow" aria-hidden="true"></span>{{ readings.page.back_label }}</a>
+    <a class="back-link" href="{{ "/readings.html" | relative_url }}"><span class="back-arrow" aria-hidden="true"></span><span data-edit="readings:page.back_label">{{ readings.page.back_label | escape }}</span></a>
     <header class="page-intro reading-topic-intro">
-      <h1>{{ topic.title }}</h1>
-      <p class="page-lede">{{ topic.description }}</p>
+      <h1 data-edit="readings:topics[slug={{ topic.slug }}].title">{{ topic.title | escape }}</h1>
+      <p class="page-lede" data-edit="readings:topics[slug={{ topic.slug }}].description">{{ topic.description | escape }}</p>
       <p class="reading-topic-count">{{ topic_posts.size }} {% if topic_posts.size == 1 %}essay{% else %}essays{% endif %}</p>
     </header>
 
     <nav class="topic-switcher" aria-label="{{ readings.page.topic_switcher_label }}">
       {% assign topics = readings.topics | sort: "order" %}
       {% for sibling in topics %}
-      <a href="{{ sibling.path | relative_url }}"{% if sibling.slug == topic.slug %} aria-current="page"{% endif %}>{{ sibling.short_title }}</a>
+      <a href="{{ sibling.path | relative_url }}"{% if sibling.slug == topic.slug %} aria-current="page"{% endif %}><span data-edit="readings:topics[slug={{ sibling.slug }}].short_title">{{ sibling.short_title | escape }}</span></a>
       {% endfor %}
     </nav>
 
@@ -31,7 +31,7 @@ topic: policy
       <article class="post-card{% if forloop.first %} post-card--lead{% endif %}">
         <a class="post-card-link" href="{{ post.url }}" target="_blank" rel="noopener noreferrer">
           {% assign post_image_path = post.image.path | default: "" %}
-          <span class="post-card-media{% if post_image_path == empty %} post-card-media--fallback{% endif %}">
+          <span class="post-card-media{% if post_image_path == empty %} post-card-media--fallback{% endif %}" data-edit-image="readings:posts[url={{ post.url }}].image">
             {% if post_image_path != empty %}
               {% if forloop.first %}
                 {% include image.html image=post.image decorative=post.image.decorative loading="eager" fetchpriority="high" %}
@@ -44,9 +44,9 @@ topic: policy
           </span>
           <span class="post-card-copy">
             <time class="post-card-date" datetime="{{ post.date }}">{{ post.date | date: "%B %-d, %Y" }}</time>
-            <h2>{{ post.title }}</h2>
-            <span class="post-card-subtitle">{{ post.subtitle }}</span>
-            <span class="post-card-action">{{ readings.page.post_cta_label }}<span class="link-arrow" aria-hidden="true"></span></span>
+            <h2 data-edit="readings:posts[url={{ post.url }}].title">{{ post.title | escape }}</h2>
+            <span class="post-card-subtitle" data-edit="readings:posts[url={{ post.url }}].subtitle">{{ post.subtitle | escape }}</span>
+            <span class="post-card-action"><span data-edit="readings:page.post_cta_label">{{ readings.page.post_cta_label | escape }}</span><span class="link-arrow" aria-hidden="true"></span></span>
           </span>
         </a>
       </article>
@@ -55,10 +55,10 @@ topic: policy
 
     <aside class="source-note source-note--compact">
       <div>
-        <h2>{{ readings.page.source_note.topic_title }}</h2>
-        <p>{{ readings.page.source_note.topic_description }}</p>
+        <h2 data-edit="readings:page.source_note.topic_title">{{ readings.page.source_note.topic_title | escape }}</h2>
+        <p data-edit="readings:page.source_note.topic_description">{{ readings.page.source_note.topic_description | escape }}</p>
       </div>
-      <a class="text-link" href="{{ readings.page.archive_url }}" target="_blank" rel="noopener noreferrer">{{ readings.page.source_note.topic_archive_label }}<span class="link-arrow" aria-hidden="true"></span></a>
+      <a class="text-link" href="{{ readings.page.archive_url }}" target="_blank" rel="noopener noreferrer"><span data-edit="readings:page.source_note.topic_archive_label">{{ readings.page.source_note.topic_archive_label | escape }}</span><span class="link-arrow" aria-hidden="true"></span></a>
     </aside>
   </main>
 

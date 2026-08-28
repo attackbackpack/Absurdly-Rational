@@ -1,7 +1,7 @@
 import { createApi } from "./lib/api.js";
-import { createDraft } from "./lib/draft.js";
+import { createDraft, commitMessage, describeFiles } from "./lib/draft.js";
 import { attachOverlay } from "./lib/overlay.js";
-import { openImagePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
+import { openImagePanel, openMemePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
 import { resolvePreviewPath } from "./lib/preview.js";
 import { resolveApiBase } from "./lib/apibase.js";
 
@@ -19,6 +19,9 @@ const frame = document.getElementById("preview");
 const status = document.getElementById("status");
 const saveButton = document.getElementById("save-button");
 const reloadButton = document.getElementById("reload-button");
+const toolbarTitle = document.getElementById("toolbar-title");
+
+const PAGE_NAMES = { home: "homepage", readings: "readings", podcasts: "podcasts", memes: "meme bank" };
 
 let draft = null;
 let overlay = null;
@@ -44,19 +47,61 @@ function onImageClick(anchor, spec) {
   });
 }
 
+function onMemeClick(anchor, spec) {
+  // The meme frame carries data-edit-meme, so it cannot also carry
+  // data-edit-image without two handlers fighting over one click. The panel
+  // hands off to the image panel instead. A meme's picture is shown in the
+  // dialog with item.image.alt as its alt text (see main.js), so it is a
+  // meaningful image and needs a description — never decorative.
+  openMemePanel({
+    anchor,
+    spec,
+    draft,
+    onDirty,
+    onEditImage: (imageAnchor, imageSpec) =>
+      openImagePanel({ anchor: imageAnchor, spec: imageSpec, draft, onDirty, decorative: false })
+  });
+}
+
+// Navigating does not discard anything: `draft` is a single module-level
+// object shared across every page, keyed by JSON path rather than by which
+// page is on screen, and every write into it (the input handler on each
+// keystroke, blur's normalize-and-commit, and every panel field's change
+// handler) happens synchronously, before this function can ever run. There
+// is nothing "in flight" for a click to lose, so no confirmation belongs
+// here — unlike beforeunload and the Reload-preview confirm below, which
+// guard against a real loss (leaving the editor entirely / reloading the
+// module and losing the in-memory draft) and must keep their weight.
+function onNavigate(href) {
+  closePanel();
+  frame.src = href;
+}
+
+// Registered once, outside start(): start() can run again (e.g. after a 401
+// during the initial content load, then a successful retry), and a listener
+// added inside its body would stack another one on every re-entry, attaching
+// duplicate overlays to the same document on every later load.
+frame.addEventListener("load", () => {
+  if (!draft) return;
+  if (overlay) overlay.detach();
+  overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
+  const page = frame.contentDocument?.body?.dataset.page || "";
+  toolbarTitle.textContent = `Editing the draft ${PAGE_NAMES[page] || "site"}`;
+  // onDirty() alone is authoritative for status: "Unsaved changes" when the
+  // draft carried unsaved edits across this navigation, "" when it didn't
+  // (which also covers clearing the initial "Loading…" message on first
+  // load). An unconditional setStatus("") here used to run right after it
+  // and always won, blanking the status even when the draft was dirty — so
+  // the save button read "enabled" while the status read blank.
+  onDirty();
+});
+
 async function start() {
   signin.hidden = true;
   workspace.hidden = false;
   setStatus("Loading…");
   const content = await api.loadContent();
-  draft = createDraft(content.site, content.baseCommitSha);
-  frame.addEventListener("load", () => {
-    if (!draft) return;
-    if (overlay) overlay.detach();
-    overlay = attachOverlay({ frame, draft, onDirty, onImageClick });
-    onDirty();
-    setStatus("");
-  });
+  draft = createDraft(content.files, content.baseCommitSha);
   frame.src = previewUrl;
 }
 
@@ -122,8 +167,31 @@ document.getElementById("settings-button").addEventListener("click", () => {
   // The workspace can now be on screen with no draft behind it: showLoadFailure
   // keeps it visible so a server error is readable. There is nothing to edit.
   if (!draft) return;
-  openSettingsPanel({ draft, onDirty });
+  const doc = frame.contentDocument;
+  const page = doc && doc.body ? doc.body.dataset.page : "";
+  openSettingsPanel({ draft, onDirty, page });
 });
+
+async function handleConflict() {
+  const pending = describeFiles(draft.changedFiles());
+  let content;
+  try {
+    content = await api.loadContent();
+  } catch {
+    setStatus(
+      `Someone else changed the draft, and the editor could not read the new version. Do not reload — that would discard your unsaved changes to the ${pending}. Copy anything you want to keep, then reload and paste it back.`
+    );
+    return;
+  }
+  const result = draft.rebase(content.files, content.baseCommitSha);
+  if (result.ok) {
+    setStatus("Someone else changed a different part of the site. Your changes are still here — press Save again.");
+    return;
+  }
+  setStatus(
+    `Someone else changed the ${describeFiles(result.files)} while you were editing, and so did you. Saving now would undo their change. Your unsaved changes to the ${pending} are still on screen — copy anything you want to keep, then reload and paste it back.`
+  );
+}
 
 saveButton.addEventListener("click", async () => {
   // A panel left open keeps writing into whatever `draft` object it closed
@@ -136,10 +204,17 @@ saveButton.addEventListener("click", async () => {
   setStatus("Saving…");
 
   try {
-    await api.save(draft.buildPayload("content(update): homepage edited in the site editor"));
+    await api.save(draft.buildPayload(commitMessage(draft.changedFiles())));
   } catch (error) {
     if (error.status === 409) {
-      setStatus("Someone else changed the draft. Reload the page before saving again.");
+      // "Reload before saving again" now costs up to four files of work, so it
+      // must not be the first answer. Most conflicts are not real ones: the
+      // other writer touched a file this draft never edited, and the edits
+      // still apply cleanly to the newer branch head. Try that first, and only
+      // if the SAME file changed on both sides say so — naming exactly what a
+      // reload would throw away.
+      setStatus("Someone else changed the draft — checking whether your work still fits…");
+      await handleConflict();
       saveButton.disabled = false;
     } else if (error.status === 401) {
       // The save itself never went through, so it is genuinely unsaved — but
@@ -169,9 +244,9 @@ saveButton.addEventListener("click", async () => {
 
   try {
     const content = await api.loadContent();
-    draft = createDraft(content.site, content.baseCommitSha);
+    draft = createDraft(content.files, content.baseCommitSha);
     if (overlay) overlay.detach();
-    overlay = attachOverlay({ frame, draft, onDirty, onImageClick });
+    overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
     // onDirty() re-derives status/button state from the fresh (clean) draft,
     // which would clear the success message we just set — restore it after.
     onDirty();
@@ -183,7 +258,11 @@ saveButton.addEventListener("click", async () => {
 });
 
 reloadButton.addEventListener("click", () => {
-  if (draft && draft.isDirty() && !confirm("Reloading discards unsaved changes. Continue?")) return;
+  if (draft && draft.isDirty()) {
+    const pending = describeFiles(draft.changedFiles());
+    const cost = pending ? `your unsaved changes to the ${pending}` : "your unsaved changes";
+    if (!confirm(`Reloading discards ${cost}. Continue?`)) return;
+  }
   location.reload();
 });
 

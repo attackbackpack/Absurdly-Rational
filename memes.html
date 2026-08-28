@@ -9,13 +9,13 @@ permalink: /memes.html
 
   <main class="page-shell">
     <header class="page-intro page-intro--meme">
-      <h1>{{ memes.page.title }}</h1>
-      <p class="page-lede">{{ memes.page.lede }}</p>
+      <h1 data-edit="memes:page.title">{{ memes.page.title | escape }}</h1>
+      <p class="page-lede" data-edit="memes:page.lede">{{ memes.page.lede | escape }}</p>
     </header>
 
     <aside class="starter-note" aria-label="{{ memes.page.starter_note_aria }}">
       <span class="starter-note-mark" aria-hidden="true">AR</span>
-      <p><strong>{{ memes.page.starter_note.label }}</strong> {{ memes.page.starter_note.description }}</p>
+      <p><strong data-edit="memes:page.starter_note.label">{{ memes.page.starter_note.label | escape }}</strong> <span data-edit="memes:page.starter_note.description">{{ memes.page.starter_note.description | escape }}</span></p>
     </aside>
 
     <section class="meme-wall" aria-label="{{ memes.page.wall_aria }}">
@@ -38,7 +38,7 @@ permalink: /memes.html
             {% when "snake-oil" %}{% assign variant_class = "meme-art--snake-oil" %}
             {% when "read-less" %}{% assign variant_class = "meme-art--read-less" %}
           {% endcase %}
-          <button class="meme-tile {{ layout_class }}" type="button" aria-label="{{ item.aria_label | escape }}" data-meme-title="{{ item.title | escape }}" data-meme-caption="{{ item.caption | escape }}" data-meme-image-alt="{{ item.image.alt | escape }}">
+          <button class="meme-tile {{ layout_class }}" type="button" data-edit-meme="memes:items[key={{ item.key }}]" aria-label="{{ item.aria_label | escape }}" data-meme-title="{{ item.title | escape }}" data-meme-caption="{{ item.caption | escape }}" data-meme-image-alt="{{ item.image.alt | escape }}">
             {% assign meme_image_path = item.image.path | default: "" %}
             {% if meme_image_path != empty %}
               <span class="meme-uploaded-media" aria-hidden="true">
@@ -46,13 +46,13 @@ permalink: /memes.html
               </span>
             {% else %}
               <span class="meme-art {{ variant_class }}" aria-hidden="true">
-                {% if item.art.kicker %}<span class="meme-art-kicker">{{ item.art.kicker | escape }}</span>{% endif %}
+                {% if item.art.kicker %}<span class="meme-art-kicker" data-edit="memes:items[key={{ item.key }}].art.kicker">{{ item.art.kicker | escape }}</span>{% endif %}
                 <span class="meme-art-text">{{ item.art.headline | escape | newline_to_br }}</span>
                 {% if item.art.accent %}<span class="meme-art-accent">{{ item.art.accent | escape | newline_to_br }}</span>{% endif %}
-                {% if item.art.stamp %}<span class="meme-art-stamp">{{ item.art.stamp | escape }}</span>{% endif %}
+                {% if item.art.stamp %}<span class="meme-art-stamp" data-edit="memes:items[key={{ item.key }}].art.stamp">{{ item.art.stamp | escape }}</span>{% endif %}
               </span>
             {% endif %}
-            <span class="meme-tile-label">{{ memes.page.tile_action_label }}</span>
+            <span class="meme-tile-label" data-edit="memes:page.tile_action_label">{{ memes.page.tile_action_label | escape }}</span>
           </button>
         {% endunless %}
       {% endfor %}

@@ -123,6 +123,7 @@ async function handleAuth(request, env) {
 const GITHUB_API = "https://api.github.com";
 const BRANCH = "editor";
 const USER_AGENT = "absurdly-rational-editor";
+const DATA_FILES = ["site", "readings", "podcasts", "memes"];
 
 function pemToArrayBuffer(pem) {
   const body = pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
@@ -179,6 +180,14 @@ async function installationToken(env) {
   return cachedToken.value;
 }
 
+function decodeBase64Utf8(content) {
+  return decodeURIComponent(
+    Array.from(atob(String(content).replace(/\n/g, "")))
+      .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`)
+      .join("")
+  );
+}
+
 async function github(env, pathname, init = {}) {
   const token = await installationToken(env);
   const response = await fetch(`${GITHUB_API}/repos/${env.GITHUB_REPO}${pathname}`, {
@@ -220,16 +229,12 @@ async function handleGetContent(request, env) {
   }
   try {
     const ref = await github(env, `/git/ref/heads/${BRANCH}`);
-    const file = await github(env, `/contents/_data/site.json?ref=${BRANCH}`);
-    const decoded = decodeURIComponent(
-      Array.from(atob(file.content.replace(/\n/g, "")))
-        .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`)
-        .join("")
-    );
-    return json(env, request, 200, {
-      site: JSON.parse(decoded),
-      baseCommitSha: ref.object.sha
-    });
+    const files = {};
+    for (const name of DATA_FILES) {
+      const file = await github(env, `/contents/_data/${name}.json?ref=${BRANCH}`);
+      files[name] = JSON.parse(decodeBase64Utf8(file.content));
+    }
+    return json(env, request, 200, { files, baseCommitSha: ref.object.sha });
   } catch (error) {
     return json(env, request, 502, { error: `Could not read the site content. ${error.message}` });
   }
