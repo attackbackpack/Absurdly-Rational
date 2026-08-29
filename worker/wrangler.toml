@@ -4,7 +4,7 @@ compatibility_date = "2026-08-19"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "replace-with-the-id-printed-by-wrangler-kv-namespace-create"
+id = "d8229b7b4db04a96bc11d9384b97e9bd"
 
 [vars]
 ALLOWED_ORIGIN = "https://absurdlyrational.com"
