@@ -1,4 +1,4 @@
-export const DEFAULT_PREVIEW_PATH = "/preview/index.html";
+export const DEFAULT_PREVIEW_PATH = "/index.html";
 
 // The value lands in iframe.src inside the trusted editor chrome, so it must be
 // a root-relative same-origin path and nothing else.

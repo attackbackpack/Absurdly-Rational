@@ -272,11 +272,10 @@ function requireUniqueKey(items, keyField, location) {
 }
 
 const site = readJson("_data/site.json");
-const editorGuide = readJson("_data/editor-guide.json");
 const readings = readJson("_data/readings.json");
 const podcasts = readJson("_data/podcasts.json");
 const memes = readJson("_data/memes.json");
-const datasets = { site, editorGuide, readings, podcasts, memes };
+const datasets = { site, readings, podcasts, memes };
 
 Object.entries(datasets).forEach(([name, data]) => {
   if (!data) {
@@ -309,15 +308,6 @@ if (site) {
       fail(`${location}: use letters, numbers, hyphens, or underscores only — the editor builds an edit path from this key`);
     }
   });
-}
-
-if (editorGuide) {
-  if (editorGuide.branch !== "editor") {
-    fail("_data/editor-guide.json.branch: the protected editing branch must remain editor");
-  }
-  if (editorGuide.preview_url !== "https://absurdlyrational.com/preview/") {
-    fail("_data/editor-guide.json.preview_url: the draft preview URL must remain https://absurdlyrational.com/preview/");
-  }
 }
 
 if (readings) {

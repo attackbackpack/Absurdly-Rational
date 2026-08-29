@@ -1,8 +1,7 @@
 // A link inside the previewed page is safe for the editor to follow only if
 // it stays on the site: nav, back-link, and topic-door hrefs are the
 // root-relative paths Jekyll's relative_url filter writes (e.g.
-// "/readings.html", or "/preview/readings.html" once the draft-preview build
-// prefixes baseurl). Anything with a scheme (https:, mailto:, javascript:) or
+// "/readings.html"). Anything with a scheme (https:, mailto:, javascript:) or
 // a protocol-relative "//" prefix leaves the site — that's how the Substack,
 // Spotify, and LinkedIn links behave today, and clicking them must keep
 // behaving that way once other links start navigating.

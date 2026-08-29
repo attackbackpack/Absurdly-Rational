@@ -19,7 +19,7 @@ export function safeUploadName(name) {
 
 // These mirror scripts/validate-content.js (allowedExtensions, maxImageBytes,
 // maxImageDimension). Anything that passes here and fails there lands on the
-// editor branch and breaks the owner's CI, so the two must stay in step.
+// main branch and breaks the live deployment, so the two must stay in step.
 export const UPLOAD_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const MAX_UPLOAD_DIMENSION = 6000;
@@ -29,7 +29,7 @@ export const MAX_UPLOAD_DIMENSION = 6000;
  *
  * safeUploadName alone is not enough to name a committed file: it de-duplicates
  * only against the current session's uploads, and knows nothing about what is
- * already in assets/uploads/ on the editor branch. Two sessions that each
+ * already in assets/uploads/ on the main branch. Two sessions that each
  * upload an "image.jpg" would produce the same path, and the second silently
  * replaces the first — the guest photo becomes the show art. Lowercasing makes
  * that likelier, not less likely (IMG_0421.JPG and img_0421.jpg converge).
@@ -63,9 +63,9 @@ const FILE_LABELS = {
 /**
  * The commit subject for a save, from the files it actually touches.
  *
- * A save can now span four data files, and the point of committing them
- * together is that the owner can review one change — which only works if the
- * subject says what changed.
+ * A publish can span four data files. Commit them together and name what
+ * changed so the repository history remains useful when a change is reviewed
+ * or reverted later.
  */
 export function describeFiles(changedFiles) {
   const names = (changedFiles || []).map((name) => FILE_LABELS[name] || name);
@@ -195,7 +195,7 @@ export function createDraft(files, baseCommitSha) {
      *
      * A 409 used to be answered with "reload before saving again", which throws
      * away a draft that can now span four files. Most conflicts are not real
-     * ones: the other writer (Pages CMS, or the same person in another tab)
+     * ones: another editor session or a direct repository update
      * touched a file this draft never edited. In that case the edits still
      * apply cleanly to the newer head, so take the newer version of every file
      * this draft left alone and move on.

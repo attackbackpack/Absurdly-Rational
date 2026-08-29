@@ -13,14 +13,13 @@
   {% assign og_image_url = site.url | append: "/" | append: og_image_path_clean %}
 {% endif %}
 <!doctype html>
-<html lang="en"{% if site.preview %} class="preview-mode"{% endif %}>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ page_seo.title | escape }}</title>
   <meta name="description" content="{{ page_seo.description | escape }}">
   <meta name="author" content="{{ site.data.site.author.name | escape }}">
-  {% if site.preview %}<meta name="robots" content="noindex, nofollow, noarchive">{% endif %}
   <meta name="theme-color" content="{{ site.data.site.theme_color }}">
   <link rel="canonical" href="{{ canonical_url }}">
   <link rel="icon" href="{{ site.data.site.brand_image.path | relative_url }}">

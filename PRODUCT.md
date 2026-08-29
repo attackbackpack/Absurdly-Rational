@@ -21,9 +21,9 @@ The site combines clinical experience, critical reasoning, and an intentionally 
 ## Capabilities and Constraints
 
 - The site is a static Jekyll/Liquid, CSS, and JavaScript project published at `https://absurdlyrational.com/`; editable content lives in structured JSON under `_data/`.
-- Pages CMS is the protected editor for the repository owner and invited collaborators. It exposes labeled text, links, image uploads, alt text, constrained image fit/focus choices, visibility, and safe content ordering without exposing templates or layout code.
-- Uploaded images live under `assets/uploads/`, are validated by Node, and can be optimized through a Pages CMS GitHub Actions media action using Sharp/WebP conversion.
-- Pages CMS edits are saved to a persistent `editor` branch, rendered under `/preview/` with a visible draft banner and search-engine blocking, and published only after an owner merges the review request into `main`.
+- The password-protected visual editor exposes labeled text, links, image uploads, alt text, constrained image fit/focus choices, visibility, and safe content ordering without exposing templates or layout code.
+- Uploaded images live under `assets/uploads/`, and content is validated both in the editor and by Node before deployment.
+- Saving in the visual editor commits allowed content directly to `main`; GitHub Pages then rebuilds the public site automatically.
 - Selected readings link out to Substack rather than reproducing full articles.
 - The podcast page links to Spotify and to verified guest-appearance destinations.
 - The meme bank supports simple thumbnail browsing and previous/next navigation after a meme is opened.

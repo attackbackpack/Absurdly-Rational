@@ -121,7 +121,7 @@ async function handleAuth(request, env) {
 }
 
 const GITHUB_API = "https://api.github.com";
-const BRANCH = "editor";
+const BRANCH = "main";
 const USER_AGENT = "absurdly-rational-editor";
 const DATA_FILES = ["site", "readings", "podcasts", "memes"];
 
@@ -240,7 +240,7 @@ async function handleGetContent(request, env) {
   }
 }
 
-const CONFLICT_MESSAGE = "Someone else changed the draft while you were editing. Reload before saving.";
+const CONFLICT_MESSAGE = "Someone else changed the site while you were editing. Reload before publishing.";
 
 const ALLOWED_PATHS = [/^_data\/[a-z-]+\.json$/, /^assets\/uploads\/[A-Za-z0-9._-]+$/];
 

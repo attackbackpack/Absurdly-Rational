@@ -1,12 +1,3 @@
-{% if site.preview %}
-<aside class="preview-status" aria-label="Draft preview status">
-  <div class="preview-status__inner">
-    <strong>Draft preview</strong>
-    <span>Not public.</span>
-    <a href="{{ site.url }}">Open live site</a>
-  </div>
-</aside>
-{% endif %}
 <nav class="site-nav" id="site-nav" aria-label="Primary navigation">
   <div class="nav-inner">
     <a class="brand" href="{{ "/index.html" | relative_url }}" aria-label="{{ site.data.site.name }} home">

@@ -1,8 +1,8 @@
 # Setting up the visual site editor
 
-The visual editor (`/editor/`) is a small Cloudflare Worker that signs the owner in with a
-password, reads `_data/site.json` from the `editor` branch, and commits changes back to it
-through a GitHub App. Nobody can use the editor until this Worker is deployed. This is a
+The visual editor (`/editor/`) uses a small Cloudflare Worker that signs the owner in with a
+password, reads the site's structured content from `main`, and commits allowed changes directly
+back to `main` through a GitHub App. Nobody can use the editor until this Worker is deployed. This is a
 one-time setup, done by the repository owner from their own computer — it needs credentials
 that must never be pasted into a chat or committed to the repository.
 
@@ -19,11 +19,11 @@ that must never be pasted into a chat or committed to the repository.
 Run every command below from the root of your local clone of the repository (the folder that
 contains this `worker/` directory).
 
-1. **Create the `editor` branch, if it doesn't already exist.** Open
-   `attackbackpack/Absurdly-Rational` on GitHub, click the branch dropdown that currently shows
-   `main`, type `editor` into the search box, and click **Create branch: editor from 'main'**.
-   Every save made through the visual editor (and through Pages CMS) lands on this branch —
-   nothing below will work without it. If the branch already exists, skip this step.
+1. **Confirm that the editor can publish to `main`.** Every **Save & publish** action writes an
+   allowed content commit directly to `main`. If a GitHub branch rule requires pull requests for
+   every update, configure that rule to let the `Absurdly Rational Editor` GitHub App bypass only
+   that requirement. Do not grant the app any repository permission beyond **Contents: Read and
+   write**.
 2. **Create the GitHub App.** GitHub → Settings → Developer settings → GitHub Apps → New GitHub
    App. Name it `Absurdly Rational Editor`. Homepage `https://absurdlyrational.com`. Uncheck
    **Webhook → Active**. Repository permissions: **Contents: Read and write**. Everything else
@@ -117,18 +117,23 @@ contains this `worker/` directory).
     git push origin main
     ```
 
-11. **Confirm the boundary.** Sign in at `https://absurdlyrational.com/editor/`, make a text
-    edit, save, and verify on GitHub that the commit landed on `editor` and touched only
-    `_data/site.json`.
+11. **Confirm the boundary.** Sign in at `https://absurdlyrational.com/editor/`, make a small text
+    edit, choose **Save & publish**, and verify on GitHub that the commit landed on `main` and
+    touched only the intended `_data/*.json` file. Wait for the Pages deployment to finish and
+    confirm the change appears on the public site.
 
 ## What the password protects — and what it doesn't
 
-The editor password guards a draft branch (`editor`) of a repository that is already public on
-GitHub. It is not a security boundary around the source code or around publishing. `main` stays
-branch-protected and requires an owner-approved pull request merge to change the public site, so
-even if the editor password leaked, whoever had it could only edit the draft — they could not
-publish anything to `absurdlyrational.com` without the owner reviewing and merging the change,
-exactly as with Pages CMS today.
+Anyone with the editor password can publish allowed content to the public site. The Worker limits
+writes to structured files under `_data/` and images under `assets/uploads/`; it rejects templates,
+CSS, JavaScript, workflows, and other repository code. Use a unique editor passphrase, rotate it
+if it is exposed, and use Git history to revert an unwanted content commit.
+
+## Retiring Pages CMS
+
+Pages CMS is not used by the visual editor. After direct publishing has been tested, you may
+uninstall the Pages CMS GitHub App from this repository. Keep the custom `Absurdly Rational
+Editor` GitHub App installed — that is the credential the Cloudflare Worker uses to publish.
 
 ## If the Worker is misconfigured
 

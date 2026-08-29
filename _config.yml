@@ -1,6 +1,5 @@
 url: https://absurdlyrational.com
 baseurl: ""
-preview: false
 timezone: America/Chicago
 markdown: kramdown
 permalink: pretty
@@ -8,10 +7,9 @@ permalink: pretty
 exclude:
   - .github
   - .impeccable
-  - .pages.yml
   - DESIGN.md
-  - OWNER_CMS_SETUP.md
   - PRODUCT.md
+  - SITE_EDITOR_GUIDE.md
   - node_modules
   - package.json
   - package-lock.json

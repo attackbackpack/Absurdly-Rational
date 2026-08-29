@@ -171,7 +171,7 @@ test("GET /content returns site.json and the branch head sha", async () => {
   const siteJson = JSON.stringify({ home: { hero: { thesis: "hi" } } });
   mock.method(globalThis, "fetch", async (input) => {
     const url = String(input.url ?? input);
-    if (url.includes("/git/ref/heads/editor")) {
+    if (url.includes("/git/ref/heads/main")) {
       return new Response(JSON.stringify({ object: { sha: "abc123" } }), { status: 200 });
     }
     if (url.includes("/contents/_data/site.json")) {
@@ -211,7 +211,7 @@ test("GET /content correctly decodes non-ASCII characters in site.json", async (
   const siteJson = JSON.stringify({ home: { hero: { thesis } } });
   mock.method(globalThis, "fetch", async (input) => {
     const url = String(input.url ?? input);
-    if (url.includes("/git/ref/heads/editor")) {
+    if (url.includes("/git/ref/heads/main")) {
       return new Response(JSON.stringify({ object: { sha: "def456" } }), { status: 200 });
     }
     if (url.includes("/contents/_data/site.json")) {
@@ -280,7 +280,7 @@ test("the allowlist accepts data files and uploads", () => {
 test("the allowlist rejects templates, workflows, and traversal", () => {
   assert.equal(isAllowedPath("index.html"), false);
   assert.equal(isAllowedPath("_includes/head.html"), false);
-  assert.equal(isAllowedPath(".github/workflows/deploy-pages-with-draft-preview.yml"), false);
+  assert.equal(isAllowedPath(".github/workflows/deploy-pages.yml"), false);
   assert.equal(isAllowedPath("_data/../index.html"), false);
   assert.equal(isAllowedPath("assets/uploads/../../main.js"), false);
   assert.equal(isAllowedPath("/_data/site.json"), false);
@@ -408,14 +408,14 @@ test("PUT /content writes an allowed file and returns the new commit sha", async
   assert.equal(response.status, 200);
   assert.equal((await response.json()).commitSha, "newcommit");
 
-  // Pins the write target: mutating BRANCH to "main" must fail this test.
+  // Pins the write target: changing BRANCH away from "main" must fail this test.
   // mockCommitApi matches ref URLs branch-agnostically, so without this
   // assertion nothing in the PUT suite would notice a write to main.
   const refUpdate = calls.find((call) => call.method === "PATCH");
   assert.ok(refUpdate, "expected a PATCH call updating the branch ref");
   assert.ok(
-    refUpdate.url.endsWith("/git/refs/heads/editor"),
-    `ref update must target the editor branch, got ${refUpdate.url}`
+    refUpdate.url.endsWith("/git/refs/heads/main"),
+    `ref update must target the main branch, got ${refUpdate.url}`
   );
 
   // Pins the blob mode: mutating "100644" to "120000" (a symlink) must fail
@@ -588,7 +588,7 @@ test("PUT /content maps a non-fast-forward ref update to 409, not 502", async ()
   );
   mock.restoreAll();
   assert.equal(response.status, 409);
-  assert.match((await response.json()).error, /Reload before saving/);
+  assert.match((await response.json()).error, /Reload before publishing/);
 });
 
 test("PUT /content still reports other GitHub failures on the ref update as 502", async () => {
@@ -678,7 +678,7 @@ function mockFourFiles() {
   };
   mock.method(globalThis, "fetch", async (input) => {
     const url = String(input.url ?? input);
-    if (url.includes("/git/ref/heads/editor")) {
+    if (url.includes("/git/ref/heads/main")) {
       return new Response(JSON.stringify({ object: { sha: "abc123" } }), { status: 200 });
     }
     for (const name of Object.keys(bodies)) {
@@ -714,7 +714,7 @@ test("GET /content surfaces a failure on any one file as 502", async () => {
   env.__installationToken = "ghs_test";
   mock.method(globalThis, "fetch", async (input) => {
     const url = String(input.url ?? input);
-    if (url.includes("/git/ref/heads/editor")) {
+    if (url.includes("/git/ref/heads/main")) {
       return new Response(JSON.stringify({ object: { sha: "abc123" } }), { status: 200 });
     }
     if (url.includes("/contents/_data/memes.json")) return new Response("boom", { status: 500 });

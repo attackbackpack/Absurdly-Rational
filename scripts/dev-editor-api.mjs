@@ -9,7 +9,7 @@
 // This script NEVER talks to GitHub. Saves DO persist locally, though: by
 // default a PUT /content writes the received bytes straight to the real
 // working-tree files (_data/*.json and assets/uploads/*) so that
-// "Reload preview" in Jekyll shows the change, the same way it will after a
+// "Reload site" in Jekyll shows the change, the same way it will after a
 // real commit in production. This is a modification of tracked files in
 // your checkout, not a commit — undo it any time with:
 //   git checkout -- _data/ && git clean -fd assets/uploads
@@ -37,7 +37,7 @@ const ALLOWED_ORIGIN = "http://localhost:4000";
 const PASSWORD = process.env.DEV_EDITOR_PASSWORD || "test-password";
 const PERSIST_TO_DISK = process.env.DEV_EDITOR_MEMORY_ONLY !== "1";
 const CONFLICT_MESSAGE =
-  "Someone else changed the draft while you were editing. Reload before saving.";
+  "Someone else changed the site while you were editing. Reload before publishing.";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "..");
@@ -117,8 +117,8 @@ const server = http.createServer(async (req, res) => {
         `  http://localhost:4000/editor/?preview=/index.html\n\n` +
         `Endpoints served here:\n` +
         `  POST /auth      sign in, returns a session token\n` +
-        `  GET  /content   fetch current draft content (requires session)\n` +
-        `  PUT  /content   save draft content (requires session)\n`
+        `  GET  /content   fetch current site content (requires session)\n` +
+        `  PUT  /content   save site content (requires session)\n`
     );
     return;
   }

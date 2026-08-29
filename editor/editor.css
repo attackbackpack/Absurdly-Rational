@@ -12,9 +12,10 @@ body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-seri
 #signin-form p { margin: 0 0 24px; opacity: .75; font-size: 14px; }
 #signin-form label { display: block; margin-bottom: 6px; font-size: 13px; opacity: .75; }
 input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #2b2f3a; background: #0d0f14; color: inherit; font: inherit; }
-button { padding: 10px 16px; border-radius: 8px; border: 0; background: var(--ar-accent); color: #fff; font: inherit; cursor: pointer; }
+button { min-height: 44px; padding: 10px 16px; border-radius: 8px; border: 0; background: var(--ar-accent); color: #fff; font: inherit; cursor: pointer; }
 button:disabled { opacity: .4; cursor: default; }
 button[data-variant="quiet"] { background: #262a35; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #6ee0cd; outline-offset: 3px; }
 #signin-form button { width: 100%; margin-top: 16px; }
 #signin-error { color: #ff8f8f; margin-top: 12px; font-size: 14px; }
 
@@ -32,3 +33,10 @@ button[data-variant="quiet"] { background: #262a35; }
 .ar-notice { margin: 0; font-size: 13px; opacity: .7; }
 .ar-problem { margin: 0; font-size: 13px; color: #ffb4b4; }
 .ar-problem[hidden] { display: none; }
+
+@media (max-width: 720px) {
+  #toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #toolbar-title, #status, #save-button { grid-column: 1 / -1; }
+  #status { margin-left: 0; }
+  #toolbar button { width: 100%; }
+}

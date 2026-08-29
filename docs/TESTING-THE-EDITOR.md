@@ -13,8 +13,8 @@ security value; its only job is to let the editor UI run.
 Saves through this server **really do write to your working tree**: a save updates
 `_data/site.json` (and any uploaded files under `assets/uploads/`) on disk, the same bytes the
 editor produced, byte-for-byte. Jekyll's file watcher picks up the change and rebuilds
-automatically, so this is how you actually confirm saving works: make an edit, press Save,
-then press "Reload preview" — you should see your change in the rendered page, not the
+automatically, so this is how you actually confirm saving works: make an edit, press **Save &
+publish**, confirm the action, then press **Reload site** — you should see your change in the rendered page, not the
 original text. If it still shows the original after a save, something is broken.
 
 This modifies tracked files in your checkout — it is not a commit, but it is a real change to
@@ -65,7 +65,8 @@ real commit history.
 ## 2. Real end-to-end, without deploying the Worker
 
 This runs the *actual* `worker/src/worker.js` locally via `wrangler dev`, so it exercises the
-real GitHub write path — saves become real commits on the `editor` branch.
+real GitHub write path — publishes become real commits on `main`. Use a test repository for this
+level unless you deliberately want the test content to reach the public site.
 
 First complete steps 1–6 of `worker/SETUP.md` (create the GitHub App, install it on the repo,
 record the App ID, private key, and installation ID; you do not need to deploy or set secrets
@@ -91,8 +92,8 @@ The real Worker listens on port 8787, not the dev stand-in's 8788, so tell the e
 that port instead by adding `apiPort=8787` to the URL:
 `http://localhost:4000/editor/?preview=/index.html&apiPort=8787`. This only ever switches
 between the two known local Worker ports — there is still nothing to edit in `editor/index.html`
-and nothing to revert. Sign in with the real `EDITOR_PASSWORD` and edit. Saves land as real
-commits on the `editor` branch of the repo the GitHub App is installed on — check GitHub
+and nothing to revert. Sign in with the real `EDITOR_PASSWORD` and edit. Publishes land as real
+commits on `main` in the repo where the GitHub App is installed — check GitHub
 afterward to confirm. Do not commit `worker/.dev.vars`.
 
 This is the level that actually proves the GitHub write path, real authentication, and the
@@ -101,7 +102,7 @@ edit-path allowlist.
 ## 3. The real thing
 
 Finish `worker/SETUP.md` (deploy with `npx wrangler deploy`, point `data-api` at the deployed
-Worker URL), merge to `main`, and confirm at `https://absurdlyrational.com/editor/`.
+Worker URL), push the editor code to `main`, and confirm at `https://absurdlyrational.com/editor/`.
 
 ## What to click, once signed in
 
@@ -114,7 +115,8 @@ Worker URL), merge to `main`, and confirm at `https://absurdlyrational.com/edito
 - **Click an image.** The image panel opens, offering upload/replace and fit/focus controls.
 - **Open Page settings.** A panel with page-level fields (title, description, etc., depending
   on the page) opens without disturbing the live preview underneath.
-- **Press Save.** A save indicator appears and resolves to success; reloading the editor should
+- **Press Save & publish and confirm.** A publishing indicator appears and resolves to success;
+  reloading the editor should
   show your changes persisted (in level 1, as a real change to `_data/site.json` in your
   working tree — undo it with the command above; in levels 2–3, as a real commit).
 
@@ -155,7 +157,7 @@ can reach content further down the page.
 - [ ] Sign in and confirm the page has 28 editable text regions and 4 image frames reachable by
   hovering (the exact count is a snapshot of the current homepage — if content has been added or
   removed since, expect the count to have moved accordingly, not to be wrong).
-- [ ] The toolbar title reads "Editing the draft homepage."
+- [ ] The toolbar title reads "Editing the homepage."
 - [ ] Click the "Choose your format" control (`#formats`). It should scroll the preview to that
   section in place. It must **not** load the editor itself into the preview pane — that was a
   real bug (a bare `#fragment` href resolving against the parent document instead of the iframe),
@@ -165,7 +167,7 @@ can reach content further down the page.
 
 **Readings index**
 - [ ] Click the readings nav link. The preview navigates, the overlay re-attaches (hover and click
-  still work on the new page), and the toolbar title updates to "Editing the draft readings."
+  still work on the new page), and the toolbar title updates to "Editing the readings."
 - [ ] Make one text edit here and leave it unsaved — you'll save it together with a podcasts edit
   in the cross-file check below.
 
@@ -174,12 +176,12 @@ can reach content further down the page.
   the overlay is live on the topic page.
 
 **Podcasts**
-- [ ] Navigate to podcasts. Toolbar title updates to "Editing the draft podcasts."
+- [ ] Navigate to podcasts. Toolbar title updates to "Editing the podcasts."
 - [ ] Edit the footer text (any page's footer works for this — editing it here, with the readings
   edit above still pending, is what the cross-file check needs).
 
 **Memes**
-- [ ] Navigate to memes. Toolbar title updates to "Editing the draft meme bank." Confirm 6 tiles
+- [ ] Navigate to memes. Toolbar title updates to "Editing the meme bank." Confirm 6 tiles
   are visible.
 - [ ] Click a tile. A panel opens with four fields: Title, Caption, Artwork headline, Artwork
   accent.
@@ -192,11 +194,12 @@ can reach content further down the page.
   about discarding unsaved work, and must not lose it — the draft spans all four data files, so an
   edit made on readings has to survive a trip through podcasts and memes and back.
 - [ ] The "Unsaved changes" indicator stays visible on every page you land on while the draft is
-  dirty — check it doesn't go blank after a navigation even though Save is still enabled.
+  dirty — check it doesn't go blank after a navigation even though **Save & publish** is still enabled.
 
 ### The cross-file save
 
-- [ ] With the readings edit and the podcasts footer edit both still pending, press Save once.
+- [ ] With the readings edit and the podcasts footer edit both still pending, press **Save & publish**
+  once and confirm.
 - [ ] Check `git diff` afterward: exactly two files should have changed — `_data/readings.json`
   and `_data/site.json` — each with exactly one changed line and no reflow or reformatting
   elsewhere in either file.
@@ -210,7 +213,7 @@ can reach content further down the page.
 Unlike navigation between pages (which should *not* interrupt you), these two exist specifically
 to stop you from losing work by accident, and both should fire every time:
 
-- [ ] With a dirty draft, use "Reload preview." Confirm it prompts — "Reloading discards unsaved
+- [ ] With a dirty draft, use **Reload site**. Confirm it prompts — "Reloading discards unsaved
   changes. Continue?" or equivalent wording — and that Cancel keeps your edit while proceeding
   discards it.
 - [ ] With a dirty draft, close or reload the browser tab itself. The browser's native

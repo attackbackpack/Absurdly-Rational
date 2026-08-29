@@ -4,7 +4,7 @@ import { isInternalHref, fragmentId } from "./links.js";
 
 test("a root-relative path is internal", () => {
   assert.equal(isInternalHref("/readings.html"), true);
-  assert.equal(isInternalHref("/preview/readings.html"), true);
+  assert.equal(isInternalHref("/readings.html"), true);
   assert.equal(isInternalHref("/readings/policy.html"), true);
 });
 

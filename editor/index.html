@@ -15,7 +15,7 @@ sitemap: false
   <div id="signin">
     <form id="signin-form">
       <h1>Site editor</h1>
-      <p>Enter the editor password to make changes to the draft site.</p>
+      <p>Enter the editor password to update the public website.</p>
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" required>
       <button type="submit">Sign in</button>
@@ -25,13 +25,13 @@ sitemap: false
 
   <div id="workspace" hidden>
     <header id="toolbar">
-      <span id="toolbar-title">Editing the draft homepage</span>
+      <span id="toolbar-title">Editing the homepage</span>
       <span id="status" role="status"></span>
       <button type="button" id="settings-button">Page settings</button>
-      <button type="button" id="reload-button">Reload preview</button>
-      <button type="button" id="save-button" disabled>Save</button>
+      <button type="button" id="reload-button">Reload site</button>
+      <button type="button" id="save-button" disabled>Save &amp; publish</button>
     </header>
-    <iframe id="preview" title="Homepage preview"></iframe>
+    <iframe id="preview" title="Website being edited"></iframe>
   </div>
 
   <script type="module" src="{{ "/editor/editor.js" | relative_url }}"></script>

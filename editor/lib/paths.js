@@ -83,7 +83,7 @@ function walk(data, segments, stopBefore) {
         //
         // [index=N] and [key=…]/[url=…] degrade differently when the rendered
         // preview is stale relative to the draft — say an item was removed
-        // through Pages CMS since the iframe last loaded. A key-based spec
+        // through another editor session since the iframe last loaded. A key-based spec
         // throws ("no member with key=x") and the edit is visibly refused. An
         // index-based one still resolves, silently, to whatever now sits at
         // that position, and writes the edit to the WRONG item. Prefer a

@@ -46,19 +46,6 @@ function relativeRepositoryPath(filePath) {
   return path.relative(root, filePath).split(path.sep).join("/");
 }
 
-function readPayload() {
-  const raw = process.env.PAGES_CMS_PAYLOAD || getArgument("--payload");
-  if (!raw) {
-    return null;
-  }
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    console.warn(`Pages CMS payload could not be parsed: ${error.message}`);
-    return null;
-  }
-}
-
 function replaceReferences(value, replacements) {
   let changed = false;
   if (Array.isArray(value)) {
@@ -98,11 +85,6 @@ async function optimize(sourcePath, targetPath) {
 }
 
 async function main() {
-  const payload = readPayload();
-  if (payload?.context?.path) {
-    console.log(`Pages CMS requested image optimization for ${payload.context.path}.`);
-  }
-
   const files = listImages(inputDirectory);
   const nonWebpStems = new Set(files.filter((file) => path.extname(file).toLowerCase() !== ".webp").map((file) => path.join(path.dirname(file), path.basename(file, path.extname(file)))));
   const replacements = new Map();

@@ -86,7 +86,7 @@ frame.addEventListener("load", () => {
   if (overlay) overlay.detach();
   overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
   const page = frame.contentDocument?.body?.dataset.page || "";
-  toolbarTitle.textContent = `Editing the draft ${PAGE_NAMES[page] || "site"}`;
+  toolbarTitle.textContent = `Editing the ${PAGE_NAMES[page] || "site"}`;
   // onDirty() alone is authoritative for status: "Unsaved changes" when the
   // draft carried unsaved edits across this navigation, "" when it didn't
   // (which also covers clearing the initial "Loading…" message on first
@@ -106,8 +106,8 @@ async function start() {
 }
 
 // Only a 401 means "your password was wrong" or "your session ended". A 500
-// (Worker misconfigured) or a 502 (GitHub said no — including the editor branch
-// not existing yet) is a server problem, and showing it under the password box
+// (Worker misconfigured) or a 502 (GitHub said no — including a protected main
+// branch rejecting the editor) is a server problem, and showing it under the password box
 // tells the user to retype a password that was never the issue.
 function showLoadFailure(error) {
   if (error.status === 401) {
@@ -150,7 +150,7 @@ form.addEventListener("submit", async (event) => {
     signin.hidden = true;
     workspace.hidden = false;
     onDirty();
-    setStatus("Signed in again — your unsaved changes are still here. Press Save to continue.");
+    setStatus("Signed in again — your unsaved changes are still here. Press Save & publish to continue.");
     return;
   }
 
@@ -179,13 +179,13 @@ async function handleConflict() {
     content = await api.loadContent();
   } catch {
     setStatus(
-      `Someone else changed the draft, and the editor could not read the new version. Do not reload — that would discard your unsaved changes to the ${pending}. Copy anything you want to keep, then reload and paste it back.`
+      `Someone else changed the site, and the editor could not read the new version. Do not reload — that would discard your unsaved changes to the ${pending}. Copy anything you want to keep, then reload and paste it back.`
     );
     return;
   }
   const result = draft.rebase(content.files, content.baseCommitSha);
   if (result.ok) {
-    setStatus("Someone else changed a different part of the site. Your changes are still here — press Save again.");
+    setStatus("Someone else changed a different part of the site. Your changes are still here — press Save & publish again.");
     return;
   }
   setStatus(
@@ -198,22 +198,24 @@ saveButton.addEventListener("click", async () => {
   // over at open time; after a successful save that object is replaced out
   // from under it, so any further panel edits would silently vanish. Saving
   // is a document-level action — close the panel first.
-  closePanel();
   if (!draft || !draft.isDirty()) return;
+  const pending = describeFiles(draft.changedFiles());
+  if (!confirm(`Publish your changes to the ${pending}? This will update the public website.`)) return;
+  closePanel();
   saveButton.disabled = true;
-  setStatus("Saving…");
+  setStatus("Publishing…");
 
   try {
     await api.save(draft.buildPayload(commitMessage(draft.changedFiles())));
   } catch (error) {
     if (error.status === 409) {
-      // "Reload before saving again" now costs up to four files of work, so it
+      // "Reload before publishing again" now costs up to four files of work, so it
       // must not be the first answer. Most conflicts are not real ones: the
       // other writer touched a file this draft never edited, and the edits
       // still apply cleanly to the newer branch head. Try that first, and only
       // if the SAME file changed on both sides say so — naming exactly what a
       // reload would throw away.
-      setStatus("Someone else changed the draft — checking whether your work still fits…");
+      setStatus("Someone else changed the site — checking whether your work still fits…");
       await handleConflict();
       saveButton.disabled = false;
     } else if (error.status === 401) {
@@ -239,7 +241,7 @@ saveButton.addEventListener("click", async () => {
   // The save has already succeeded at this point. Everything below is best-effort
   // cleanup (refreshing content, rebuilding the draft/overlay against the new
   // baseCommitSha) — its failure must never be reported as a save failure.
-  const savedMessage = "Saved. The preview rebuilds in about a minute — use Reload preview to see it.";
+  const savedMessage = "Saved. The public site is rebuilding — use Reload site in about a minute to see it.";
   setStatus(savedMessage);
 
   try {

@@ -322,7 +322,7 @@ test("uploadRejection reports the extension problem before the size problem", ()
   assert.match(problem, /JPG, PNG, or WebP/);
 });
 
-// --- Upload names must not collide with what is already on the editor branch.
+// --- Upload names must not collide with what is already on the main branch.
 // stageUpload used to de-duplicate only within one session, so two sessions
 // that each uploaded an "image.jpg" produced the same path and the second
 // silently replaced the first.

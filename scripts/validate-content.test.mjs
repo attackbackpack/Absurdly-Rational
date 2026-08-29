@@ -84,10 +84,6 @@ function validate({ site, uploads = {}, readingsData, podcastsData, memesData, r
     const write = (name, value) =>
       fs.writeFileSync(path.join(root, "_data", name), JSON.stringify(value));
     write("site.json", site);
-    write("editor-guide.json", {
-      branch: "editor",
-      preview_url: "https://absurdlyrational.com/preview/"
-    });
     write("readings.json", readingsData || readings());
     write("podcasts.json", podcastsData || { guests: [] });
     write("memes.json", memesData || { items: [] });

@@ -75,7 +75,7 @@ export function guestLinkFields(guests) {
  *
  * art.kicker and art.stamp are here because memes.html wraps each of them in
  * {% if %}: clearing one from the page removes the node on the next rebuild,
- * leaving nothing to click and no way back short of Pages CMS. The panel is
+ * leaving nothing to click and no way back through inline editing. The panel is
  * the way back.
  */
 export const MEME_ITEM_SPEC = "memes:items[key={{ item.key }}]";
