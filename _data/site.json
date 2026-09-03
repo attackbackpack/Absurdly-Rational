@@ -84,7 +84,7 @@
         "url": "podcasts.html",
         "image": {
           "decorative": true,
-          "fit": "cover",
+          "fit": "contain",
           "focus": "center",
           "path": "assets/uploads/img_2153-1embfch0y553.jpeg",
           "alt": ""
@@ -99,7 +99,7 @@
         "url": "memes.html",
         "image": {
           "decorative": true,
-          "fit": "cover",
+          "fit": "contain",
           "focus": "center",
           "path": "assets/uploads/img_2119-01oox5m176tx.jpeg",
           "alt": ""

@@ -343,7 +343,7 @@ button { font: inherit; }
   transform: translateY(-5px);
 }
 .format-door--readings { grid-column: 1 / -1; min-height: 28rem; }
-.format-door--podcasts, .format-door--memes { grid-template-columns: 1fr; min-height: 32rem; }
+.format-door--podcasts, .format-door--memes { grid-template-columns: 1fr; grid-template-rows: minmax(17rem, 1fr) auto; min-height: 32rem; }
 .door-art {
   position: relative;
   display: block;
