@@ -98,9 +98,11 @@
         "meta": "A starter set of branded absurdity",
         "url": "memes.html",
         "image": {
-          "decorative": false,
+          "decorative": true,
           "fit": "cover",
-          "focus": "center"
+          "focus": "center",
+          "path": "assets/uploads/img_2119-01oox5m176tx.jpeg",
+          "alt": ""
         }
       }
     ],
