@@ -84,7 +84,7 @@
         "url": "podcasts.html",
         "image": {
           "decorative": true,
-          "fit": "cover",
+          "fit": "contain",
           "focus": "center",
           "path": "assets/uploads/img_1182-1uxtit408mni.png",
           "alt": ""
