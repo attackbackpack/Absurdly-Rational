@@ -77,7 +77,7 @@
         "key": "podcasts",
         "class_name": "podcasts",
         "title": "Podcasts",
-        "description": "Physician podcast conversations about medical judgment and healthcare decision-making.",
+        "description": "Podcast conversations about medical decision-making, the outcomes of bad decisions, and the evidence that makes it somewhat predictable.",
         "meta": "Listen and guest appearances",
         "url": "podcasts.html",
         "image": {
