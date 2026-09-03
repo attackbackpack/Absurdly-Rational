@@ -8,7 +8,7 @@
       "twitter_description": "Four routes through evidence-based medicine, health misinformation, healthcare policy, critical thinking, and hospital life."
     },
     "title": "Readings, sorted by obsession.",
-    "lede": "Choose a subject, preview the essays here, then follow any post to its original home on Substack.",
+    "lede": "Choose a subject, preview the essays here, then follow any post to its home on Substack.",
     "back_label": "All reading topics",
     "topic_switcher_label": "Reading topics",
     "post_cta_label": "Read on Substack",
@@ -49,7 +49,7 @@
       "path": "readings-policy.html",
       "title": "When Policy Meets Practice",
       "short_title": "Policy Meets Practice",
-      "description": "Hey, I don’t want to be political, but politics can literally poison you.",
+      "description": "Hey, I don’t want to be political, but politics can literally kill you.",
       "index_label": "Policy / institutions",
       "aria_label": "Policy and practice essays",
       "seo": {
@@ -85,7 +85,7 @@
       "path": "readings-hospital.html",
       "title": "Hospital Life & Other Philosophical Observations",
       "short_title": "Hospital Life",
-      "description": "It’s never as clean as <em>The Pitt</em>, nor as sexy as <em>Grey’s Anatomy</em>. But it’s funny.",
+      "description": "It’s never as clean as The Pitt, nor as sexy as Grey’s Anatomy… but it’s instructive and sometimes funny.",
       "index_label": "Medicine / mortality",
       "aria_label": "Hospital life and philosophy essays",
       "seo": {
