@@ -12,14 +12,14 @@
     "show": {
       "title": "The Absurdly Rational Podcast",
       "description": "A safe-ish space where evidence-based medicine, health misinformation, policy misalignment, economics, and the lived reality of healthcare get to argue in public. Eye-protection is recommended in the splash zone.",
-      "meta": "The home show",
+      "meta": "",
       "label": "AR / LIVE",
       "button_label": "Listen on Spotify",
       "url": "https://open.spotify.com/show/2THvy96eG61wpOeJEWsGKO",
       "new_tab": true,
       "image": {
-        "path": "",
-        "alt": "",
+        "path": "assets/uploads/img_1401-1ywso2d1c98a.png",
+        "alt": "Another fire in the hospital. No biggie.",
         "fit": "cover",
         "focus": "center"
       }
