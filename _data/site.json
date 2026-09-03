@@ -69,7 +69,7 @@
         "url": "readings.html",
         "image": {
           "decorative": true,
-          "fit": "cover",
+          "fit": "contain",
           "focus": "right",
           "path": "assets/uploads/img_1863-1rqoufi01eq9.jpeg",
           "alt": ""
