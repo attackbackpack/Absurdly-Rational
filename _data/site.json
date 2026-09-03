@@ -68,9 +68,11 @@
         "meta": "Long reads on Substack",
         "url": "readings.html",
         "image": {
-          "decorative": false,
+          "decorative": true,
           "fit": "cover",
-          "focus": "center"
+          "focus": "right",
+          "path": "assets/uploads/img_1863-1rqoufi01eq9.jpeg",
+          "alt": ""
         }
       },
       {
