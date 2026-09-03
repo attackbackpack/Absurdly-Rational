@@ -18,8 +18,24 @@ const OVERLAY_STYLE = `
 .ar-refusal { position: absolute; z-index: 2147483647; max-width: min(28rem, 80vw); padding: 10px 12px; border-radius: 10px; background: #2a1114; color: #ffdada; border: 1px solid #7a2b33; box-shadow: 0 8px 24px rgba(0,0,0,.35); font: 400 14px/1.45 system-ui, -apple-system, sans-serif; }
 `;
 
+/**
+ * Repaint editable text from the current draft before wiring the page up.
+ *
+ * The iframe can still contain the previous deployed build for roughly a
+ * minute after a successful publish. It can also load that older build when
+ * the editor navigates between pages with unsaved work. The draft is the
+ * current source of truth in both cases, so keep the editor from appearing to
+ * undo a change that is either pending or already saved.
+ */
+export function renderDraftText(doc, draft) {
+  for (const node of doc.querySelectorAll("[data-edit]")) {
+    node.textContent = draft.read(node.dataset.edit);
+  }
+}
+
 export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate }) {
   const doc = frame.contentDocument;
+  renderDraftText(doc, draft);
   const style = doc.createElement("style");
   style.textContent = OVERLAY_STYLE;
   doc.head.appendChild(style);

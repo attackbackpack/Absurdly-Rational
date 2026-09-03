@@ -241,7 +241,8 @@ saveButton.addEventListener("click", async () => {
   // The save has already succeeded at this point. Everything below is best-effort
   // cleanup (refreshing content, rebuilding the draft/overlay against the new
   // baseCommitSha) — its failure must never be reported as a save failure.
-  const savedMessage = "Saved. The public site is rebuilding — use Reload site in about a minute to see it.";
+  const savedMessage =
+    "Saved. Your changes will stay visible here while the public site rebuilds. Use Reload site in about a minute to confirm the live version.";
   setStatus(savedMessage);
 
   try {
