@@ -118,11 +118,54 @@ function select(label, options, value, onChange) {
   return wrapper;
 }
 
-async function fileToBase64(file) {
-  const buffer = new Uint8Array(await file.arrayBuffer());
+const IMAGE_MIME_TYPES = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp"
+};
+
+export function imageMimeType(fileName) {
+  const cleaned = String(fileName).toLowerCase();
+  const dot = cleaned.lastIndexOf(".");
+  return IMAGE_MIME_TYPES[dot === -1 ? "" : cleaned.slice(dot + 1)] || "application/octet-stream";
+}
+
+export async function prepareImageFile(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
   let binary = "";
-  for (const byte of buffer) binary += String.fromCharCode(byte);
-  return btoa(binary);
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return {
+    bytesBase64: btoa(binary),
+    // Some iPad photo-library Files are disk-backed and WebKit can fail to
+    // display their object URLs. A byte-for-byte in-memory Blob avoids that
+    // path, and an extension-derived MIME type keeps a blank/misreported
+    // file.type from making an otherwise valid preview unreadable.
+    previewBlob: new Blob([bytes], { type: imageMimeType(file.name) })
+  };
+}
+
+export function decodeImagePreview(blob, dependencies = {}) {
+  const createUrl = dependencies.createUrl || ((value) => URL.createObjectURL(value));
+  const revokeUrl = dependencies.revokeUrl || ((value) => URL.revokeObjectURL(value));
+  const createImage = dependencies.createImage || (() => new Image());
+  const url = createUrl(blob);
+
+  return new Promise((resolve, reject) => {
+    const probe = createImage();
+    probe.onload = () => {
+      resolve({
+        url,
+        width: probe.naturalWidth || probe.width,
+        height: probe.naturalHeight || probe.height
+      });
+    };
+    probe.onerror = () => {
+      revokeUrl(url);
+      reject(new Error("The selected image could not be decoded."));
+    };
+    probe.src = url;
+  });
 }
 
 /**
@@ -194,9 +237,14 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   problem.className = "ar-problem";
   problem.setAttribute("role", "alert");
   problem.hidden = true;
+  const selectionStatus = document.createElement("p");
+  selectionStatus.className = "ar-confirmation";
+  selectionStatus.setAttribute("role", "status");
+  selectionStatus.hidden = true;
   const reject = (text) => {
     problem.textContent = text;
     problem.hidden = false;
+    selectionStatus.hidden = true;
     // Without this the same file cannot be chosen twice in a row: no change
     // event fires when the value is unchanged.
     picker.value = "";
@@ -223,31 +271,52 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
       reject(nameOrSize);
       return;
     }
-    let bitmap = null;
+
+    picker.disabled = true;
+    selectionStatus.textContent = `Preparing “${file.name}”…`;
+    selectionStatus.hidden = false;
+
+    let prepared;
+    let preview;
     try {
-      bitmap = await createImageBitmap(file);
+      prepared = await prepareImageFile(file);
+      preview = await decodeImagePreview(prepared.previewBlob);
     } catch {
-      bitmap = null;
+      reject("That file could not be read as an image. Try opening it and re-saving it as a JPG, PNG, or WebP.");
+      picker.disabled = false;
+      return;
     }
     const dimensions = uploadRejection({
       name: file.name,
       size: file.size,
-      width: bitmap && bitmap.width,
-      height: bitmap && bitmap.height
+      width: preview.width,
+      height: preview.height
     });
-    if (bitmap && bitmap.close) bitmap.close();
     if (dimensions) {
+      URL.revokeObjectURL(preview.url);
       reject(dimensions);
+      picker.disabled = false;
       return;
     }
     completeShape();
     // Passing the spec lets the draft drop the file staged for this same slot
     // a moment ago: without it, changing your mind about a picture committed
     // both the one you kept and the one you abandoned.
-    const repoPath = draft.stageUpload(file.name, await fileToBase64(file), spec);
+    const repoPath = draft.stageUpload(file.name, prepared.bytesBase64, spec);
     draft.write(`${spec}.path`, repoPath);
     currentPath = repoPath;
-    if (img) img.src = URL.createObjectURL(file);
+    if (img) {
+      const previousPreview = img.dataset.editorPreviewUrl;
+      img.src = preview.url;
+      img.dataset.editorPreviewUrl = preview.url;
+      if (previousPreview) URL.revokeObjectURL(previousPreview);
+      selectionStatus.textContent = `Selected “${file.name}”. The preview now shows the image that will upload.`;
+    } else {
+      URL.revokeObjectURL(preview.url);
+      selectionStatus.textContent = `Selected “${file.name}”. It will replace the built-in artwork after publishing.`;
+    }
+    selectionStatus.hidden = false;
+    picker.disabled = false;
     onDirty();
   });
 
@@ -284,6 +353,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
   pickerLabel.appendChild(picker);
   box.appendChild(pickerLabel);
   box.appendChild(problem);
+  box.appendChild(selectionStatus);
 
   box.appendChild(
     select("Image fit", FITS, image.fit || "cover", (value) => {

@@ -33,6 +33,14 @@ export function renderDraftText(doc, draft) {
   }
 }
 
+export function isEditorInteraction(target) {
+  return Boolean(
+    target &&
+      typeof target.closest === "function" &&
+      target.closest("[data-edit], [data-edit-image], [data-edit-meme]")
+  );
+}
+
 export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate }) {
   const doc = frame.contentDocument;
   renderDraftText(doc, draft);
@@ -75,14 +83,15 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
 
   // A click on a link always cancels the browser's own navigation — the shell
   // decides whether to follow it instead, so it can guard unsaved work first.
-  // The [data-edit] check must run first: hero.cta_label, context.contact_label,
-  // and every nav label are spans nested inside an <a>, and a click there is
-  // meant to place a caret, not navigate.
+  // Editor controls nested inside a link must win too. In particular, the
+  // homepage format images sit inside destination links: navigating during
+  // their click detaches the image the panel is editing, so a selected photo
+  // appears blank even though it was staged successfully.
   on(doc, "click", (event) => {
     const link = event.target.closest("a");
     if (!link) return;
     event.preventDefault();
-    if (event.target.closest("[data-edit]")) return;
+    if (isEditorInteraction(event.target)) return;
     const href = link.getAttribute("href") || "";
     // A fragment (e.g. the homepage hero button's "#formats") names a spot on
     // this same document, not a page to load. Assigning it to frame.src would

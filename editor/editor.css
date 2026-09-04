@@ -32,7 +32,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ar-field textarea { min-height: 68px; resize: vertical; }
 .ar-notice { margin: 0; font-size: 13px; opacity: .7; }
 .ar-problem { margin: 0; font-size: 13px; color: #ffb4b4; }
-.ar-problem[hidden] { display: none; }
+.ar-confirmation { margin: 0; font-size: 13px; color: #9ef2df; }
+.ar-problem[hidden], .ar-confirmation[hidden] { display: none; }
 
 @media (max-width: 720px) {
   #toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

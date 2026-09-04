@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { renderDraftText } from "./overlay.js";
+import { isEditorInteraction, renderDraftText } from "./overlay.js";
 
 test("renderDraftText keeps pending or newly published text visible over an older build", () => {
   const nodes = [
@@ -21,4 +21,23 @@ test("renderDraftText keeps pending or newly published text visible over an olde
     nodes.map((node) => node.textContent),
     ["Current editor title", "Current editor footer"]
   );
+});
+
+function targetInside(attribute) {
+  return {
+    closest(selector) {
+      return selector.split(", ").includes(attribute) ? { dataset: {} } : null;
+    }
+  };
+}
+
+test("editor interactions nested inside links do not navigate the preview", () => {
+  assert.equal(isEditorInteraction(targetInside("[data-edit]")), true);
+  assert.equal(isEditorInteraction(targetInside("[data-edit-image]")), true);
+  assert.equal(isEditorInteraction(targetInside("[data-edit-meme]")), true);
+});
+
+test("ordinary link content is still treated as navigation", () => {
+  assert.equal(isEditorInteraction(targetInside("[data-unrelated]")), false);
+  assert.equal(isEditorInteraction(null), false);
 });
