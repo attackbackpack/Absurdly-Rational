@@ -149,7 +149,11 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, origin, 401, { error: "Sign in again." });
       return;
     }
-    sendJson(res, origin, 200, { files: state.files, baseCommitSha: state.headSha });
+    sendJson(res, origin, 200, {
+      files: state.files,
+      baseCommitSha: state.headSha,
+      assetBase: `${ALLOWED_ORIGIN}/`
+    });
     return;
   }
 

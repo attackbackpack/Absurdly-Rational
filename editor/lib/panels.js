@@ -193,12 +193,12 @@ export function seedImageWrites(image, decorative) {
   return writes;
 }
 
-export function openImagePanel({ anchor, spec, draft, onDirty, decorative = false }) {
+export function openImagePanel({ anchor, spec, draft, onDirty, onPreview, decorative = false }) {
   const { root, close } = panelRoot();
   const box = document.createElement("div");
   box.className = "ar-panel-box";
   const image = draft.read(spec);
-  const img = anchor.querySelector("img.image-object");
+  let img = anchor.querySelector("img.image-object");
   // _includes/image.html renders alt="" when `include.decorative or
   // image.decorative`; mirror both inputs. `decorative` comes from the template
   // via the call site (door art is always decorative there, whatever the data
@@ -225,7 +225,7 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
     const notice = document.createElement("p");
     notice.className = "ar-notice";
     notice.textContent =
-      "This spot currently shows the built-in artwork. Choose an image, then save — the preview shows it after the site rebuilds.";
+      "This spot currently shows the built-in artwork. Choose an image to preview it here immediately.";
     box.appendChild(notice);
   }
 
@@ -305,14 +305,20 @@ export function openImagePanel({ anchor, spec, draft, onDirty, decorative = fals
     const repoPath = draft.stageUpload(file.name, prepared.bytesBase64, spec);
     draft.write(`${spec}.path`, repoPath);
     currentPath = repoPath;
-    if (img) {
+    if (onPreview) {
+      onPreview(spec, repoPath, preview.url);
+      img = anchor.querySelector("img.image-object");
+    } else if (img) {
       const previousPreview = img.dataset.editorPreviewUrl;
       img.src = preview.url;
       img.dataset.editorPreviewUrl = preview.url;
       if (previousPreview) URL.revokeObjectURL(previousPreview);
-      selectionStatus.textContent = `Selected “${file.name}”. The preview now shows the image that will upload.`;
     } else {
       URL.revokeObjectURL(preview.url);
+    }
+    if (img) {
+      selectionStatus.textContent = `Selected “${file.name}”. The preview now shows the image that will upload.`;
+    } else {
       selectionStatus.textContent = `Selected “${file.name}”. It will replace the built-in artwork after publishing.`;
     }
     selectionStatus.hidden = false;

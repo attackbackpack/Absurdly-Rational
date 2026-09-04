@@ -1,6 +1,6 @@
 import { createApi } from "./lib/api.js";
 import { createDraft, commitMessage, describeFiles } from "./lib/draft.js";
-import { attachOverlay } from "./lib/overlay.js";
+import { attachOverlay, renderDraftImages } from "./lib/overlay.js";
 import { openImagePanel, openMemePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
 import { resolvePreviewPath } from "./lib/preview.js";
 import { resolveApiBase } from "./lib/apibase.js";
@@ -22,9 +22,17 @@ const reloadButton = document.getElementById("reload-button");
 const toolbarTitle = document.getElementById("toolbar-title");
 
 const PAGE_NAMES = { home: "homepage", readings: "readings", podcasts: "podcasts", memes: "meme bank" };
+const GITHUB_ASSET_ROOT = "https://raw.githubusercontent.com/attackbackpack/Absurdly-Rational/";
 
 let draft = null;
 let overlay = null;
+let imageAssetBase = new URL("/", location.href).href;
+const imagePreviews = new Map();
+
+function assetBaseFor(content) {
+  if (content.assetBase) return content.assetBase;
+  return `${GITHUB_ASSET_ROOT}${encodeURIComponent(content.baseCommitSha || "main")}/`;
+}
 
 function setStatus(message) {
   status.textContent = message;
@@ -35,6 +43,15 @@ function onDirty() {
   setStatus(draft && draft.isDirty() ? "Unsaved changes" : "");
 }
 
+function rememberImagePreview(spec, path, url) {
+  const previous = imagePreviews.get(spec);
+  if (previous && previous.url !== url) URL.revokeObjectURL(previous.url);
+  imagePreviews.set(spec, { path, url });
+  if (frame.contentDocument && draft) {
+    renderDraftImages(frame.contentDocument, draft, { assetBase: imageAssetBase, previews: imagePreviews });
+  }
+}
+
 function onImageClick(anchor, spec) {
   // The template, not the data, decides that door art is decorative — it passes
   // decorative=true to _includes/image.html — so it also has to say so here.
@@ -43,6 +60,7 @@ function onImageClick(anchor, spec) {
     spec,
     draft,
     onDirty,
+    onPreview: rememberImagePreview,
     decorative: anchor.hasAttribute("data-edit-image-decorative")
   });
 }
@@ -59,7 +77,14 @@ function onMemeClick(anchor, spec) {
     draft,
     onDirty,
     onEditImage: (imageAnchor, imageSpec) =>
-      openImagePanel({ anchor: imageAnchor, spec: imageSpec, draft, onDirty, decorative: false })
+      openImagePanel({
+        anchor: imageAnchor,
+        spec: imageSpec,
+        draft,
+        onDirty,
+        onPreview: rememberImagePreview,
+        decorative: false
+      })
   });
 }
 
@@ -84,7 +109,16 @@ function onNavigate(href) {
 frame.addEventListener("load", () => {
   if (!draft) return;
   if (overlay) overlay.detach();
-  overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
+  overlay = attachOverlay({
+    frame,
+    draft,
+    onDirty,
+    onImageClick,
+    onMemeClick,
+    onNavigate,
+    assetBase: imageAssetBase,
+    imagePreviews
+  });
   const page = frame.contentDocument?.body?.dataset.page || "";
   toolbarTitle.textContent = `Editing the ${PAGE_NAMES[page] || "site"}`;
   // onDirty() alone is authoritative for status: "Unsaved changes" when the
@@ -101,6 +135,7 @@ async function start() {
   workspace.hidden = false;
   setStatus("Loading…");
   const content = await api.loadContent();
+  imageAssetBase = assetBaseFor(content);
   draft = createDraft(content.files, content.baseCommitSha);
   frame.src = previewUrl;
 }
@@ -185,6 +220,7 @@ async function handleConflict() {
   }
   const result = draft.rebase(content.files, content.baseCommitSha);
   if (result.ok) {
+    imageAssetBase = assetBaseFor(content);
     setStatus("Someone else changed a different part of the site. Your changes are still here — press Save & publish again.");
     return;
   }
@@ -247,9 +283,19 @@ saveButton.addEventListener("click", async () => {
 
   try {
     const content = await api.loadContent();
+    imageAssetBase = assetBaseFor(content);
     draft = createDraft(content.files, content.baseCommitSha);
     if (overlay) overlay.detach();
-    overlay = attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate });
+    overlay = attachOverlay({
+      frame,
+      draft,
+      onDirty,
+      onImageClick,
+      onMemeClick,
+      onNavigate,
+      assetBase: imageAssetBase,
+      imagePreviews
+    });
     // onDirty() re-derives status/button state from the fresh (clean) draft,
     // which would clear the success message we just set — restore it after.
     onDirty();

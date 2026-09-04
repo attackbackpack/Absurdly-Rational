@@ -1,4 +1,5 @@
 import { normalizeEditText, editTextChanged } from "./editText.js";
+import { FITS, FOCUSES, fitClass, focusClass } from "./imagefit.js";
 import { isInternalHref, fragmentId } from "./links.js";
 import { textRejection } from "./rules.js";
 
@@ -15,6 +16,7 @@ const OVERLAY_STYLE = `
    reaches node.textContent, so it cannot be committed to the draft. */
 [data-edit]:empty { display: inline-block; min-width: 9ch; min-height: 1.2em; outline: 2px dashed rgba(111,123,255,.55); }
 [data-edit]:empty::before { content: "Empty — click to type"; opacity: .6; font-size: .8em; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; white-space: nowrap; }
+.ar-editor-image-preview { position: absolute; inset: 0; z-index: 4; }
 .ar-refusal { position: absolute; z-index: 2147483647; max-width: min(28rem, 80vw); padding: 10px 12px; border-radius: 10px; background: #2a1114; color: #ffdada; border: 1px solid #7a2b33; box-shadow: 0 8px 24px rgba(0,0,0,.35); font: 400 14px/1.45 system-ui, -apple-system, sans-serif; }
 `;
 
@@ -33,6 +35,83 @@ export function renderDraftText(doc, draft) {
   }
 }
 
+export function imageSpecForTarget(target) {
+  if (target.dataset.editImage) return target.dataset.editImage;
+  if (target.dataset.editMeme) return `${target.dataset.editMeme}.image`;
+  return "";
+}
+
+export function imageSource(path, assetBase) {
+  if (!path) return "";
+  if (String(path).includes("://")) return String(path);
+  return new URL(String(path).replace(/^\/+/, ""), assetBase).href;
+}
+
+function sourceMatchesPath(source, path, baseUrl) {
+  if (!source || !path || source.startsWith("blob:")) return false;
+  try {
+    if (String(path).includes("://")) return new URL(source, baseUrl).href === new URL(path).href;
+    return decodeURI(new URL(source, baseUrl).pathname).endsWith(`/${String(path).replace(/^\/+/, "")}`);
+  } catch {
+    return false;
+  }
+}
+
+function applyImageSettings(img, image, decorative) {
+  img.hidden = false;
+  img.alt = decorative ? "" : image.alt || "";
+  img.classList.remove(...FITS.map(fitClass), ...FOCUSES.map(focusClass));
+  img.classList.add(fitClass(image.fit), focusClass(image.focus));
+}
+
+function createPreviewImage(doc, target) {
+  const img = doc.createElement("img");
+  img.className = "image-object ar-editor-image-preview";
+  img.decoding = "async";
+
+  if (target.dataset.editMeme) {
+    const media = doc.createElement("span");
+    media.className = "meme-uploaded-media";
+    media.setAttribute("aria-hidden", "true");
+    img.classList.add("meme-uploaded-image");
+    media.appendChild(img);
+    target.prepend(media);
+  } else {
+    target.appendChild(img);
+  }
+  return img;
+}
+
+/**
+ * Repaint editable images from the current draft over an older deployed page.
+ * Local object URLs win while this editor session is open. After a reload, the
+ * editor uses an immutable GitHub-commit asset base so a newly published
+ * upload can render before GitHub Pages has rebuilt the public site.
+ */
+export function renderDraftImages(doc, draft, { assetBase = doc.baseURI, previews = new Map() } = {}) {
+  for (const target of doc.querySelectorAll("[data-edit-image], [data-edit-meme]")) {
+    const spec = imageSpecForTarget(target);
+    const image = draft.read(spec);
+    const path = typeof image.path === "string" ? image.path : "";
+    let img = target.querySelector("img.image-object");
+
+    if (!path) {
+      if (img) (img.closest(".meme-uploaded-media") || img).hidden = true;
+      continue;
+    }
+
+    const preview = previews.get(spec);
+    const previewSource = preview && preview.path === path ? preview.url : "";
+    const source = previewSource || imageSource(path, assetBase);
+    if (!img) img = createPreviewImage(doc, target);
+    const visibilityNode = img.closest(".meme-uploaded-media") || img;
+    visibilityNode.hidden = false;
+    const decorative = target.hasAttribute("data-edit-image-decorative") || Boolean(target.dataset.editMeme) || image.decorative === true;
+    applyImageSettings(img, image, decorative);
+    if (previewSource || !sourceMatchesPath(img.getAttribute("src"), path, doc.baseURI)) img.src = source;
+  }
+}
+
 export function isEditorInteraction(target) {
   return Boolean(
     target &&
@@ -41,9 +120,10 @@ export function isEditorInteraction(target) {
   );
 }
 
-export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate }) {
+export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate, assetBase, imagePreviews }) {
   const doc = frame.contentDocument;
   renderDraftText(doc, draft);
+  renderDraftImages(doc, draft, { assetBase, previews: imagePreviews });
   const style = doc.createElement("style");
   style.textContent = OVERLAY_STYLE;
   doc.head.appendChild(style);
