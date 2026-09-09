@@ -17,8 +17,87 @@ const OVERLAY_STYLE = `
 [data-edit]:empty { display: inline-block; min-width: 9ch; min-height: 1.2em; outline: 2px dashed rgba(111,123,255,.55); }
 [data-edit]:empty::before { content: "Empty — click to type"; opacity: .6; font-size: .8em; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; white-space: nowrap; }
 .ar-editor-image-preview { position: absolute; inset: 0; z-index: 4; }
+.meme-editor-add { display: grid; grid-row: span 2; min-height: 0; place-items: center; padding: 0; border: 1px dashed rgba(199,174,255,.55); border-radius: 14px; background: rgba(199,174,255,.04); color: #c7aeff; cursor: pointer; font: 500 2rem/1 system-ui, sans-serif; }
+.meme-editor-add:hover { border-color: #6ee0cd; background: rgba(110,224,205,.07); color: #6ee0cd; }
+.meme-editor-add:focus-visible { outline: 3px solid #6ee0cd; outline-offset: 4px; }
+.meme-editor-slot { position: absolute; inset: 0; display: grid; place-items: center; border: 1px dashed rgba(199,174,255,.42); color: #aab3bf; font: 500 .78rem/1.4 "DM Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
+@media (max-width: 480px) { .meme-editor-add { min-height: 24rem; } }
 .ar-refusal { position: absolute; z-index: 2147483647; max-width: min(28rem, 80vw); padding: 10px 12px; border-radius: 10px; background: #2a1114; color: #ffdada; border: 1px solid #7a2b33; box-shadow: 0 8px 24px rgba(0,0,0,.35); font: 400 14px/1.45 system-ui, -apple-system, sans-serif; }
 `;
+
+function hasMemeImage(item) {
+  return Boolean(item && item.image && typeof item.image.path === "string" && item.image.path);
+}
+
+function isNeutralMeme(item) {
+  return Boolean(item && item.art && item.art.headline === "");
+}
+
+export function memeItemsForEditor(items, newMemeKeys = new Set()) {
+  const isNew = typeof newMemeKeys === "function" ? newMemeKeys : (key) => newMemeKeys.has(key);
+  return (Array.isArray(items) ? items : []).filter(
+    (item) => item && item.visible !== false && (hasMemeImage(item) || isNew(item.key) || isNeutralMeme(item))
+  );
+}
+
+function memeItemsFromDraft(draft) {
+  try {
+    return memeItemsForEditor(
+      draft.read("memes:items"),
+      (key) => typeof draft.isNewMeme === "function" && draft.isNewMeme(key)
+    );
+  } catch {
+    return [];
+  }
+}
+
+function createMemeEditorTile(doc, item) {
+  const tile = doc.createElement("button");
+  tile.type = "button";
+  tile.className = "meme-tile";
+  tile.dataset.editorMemeTile = "true";
+  tile.dataset.editMeme = `memes:items[key=${item.key}]`;
+  tile.dataset.memeImageAlt = item.image && typeof item.image.alt === "string" ? item.image.alt : "";
+  tile.setAttribute(
+    "aria-label",
+    hasMemeImage(item) ? `Edit meme image: ${item.image.alt || "uploaded image"}` : "Add meme image"
+  );
+
+  if (hasMemeImage(item)) {
+    const media = doc.createElement("span");
+    media.className = "meme-uploaded-media";
+    media.setAttribute("aria-hidden", "true");
+    const image = doc.createElement("img");
+    image.className = "image-object meme-uploaded-image";
+    image.decoding = "async";
+    media.appendChild(image);
+    tile.appendChild(media);
+  } else {
+    const slot = doc.createElement("span");
+    slot.className = "meme-editor-slot";
+    slot.setAttribute("aria-hidden", "true");
+    slot.textContent = "Add meme image";
+    tile.appendChild(slot);
+  }
+
+  return tile;
+}
+
+export function syncMemeEditor(doc, draft) {
+  if (!doc.body || doc.body.dataset.page !== "memes") return null;
+  const wall = doc.querySelector(".meme-wall");
+  if (!wall) return null;
+
+  const tiles = memeItemsFromDraft(draft).map((item) => createMemeEditorTile(doc, item));
+  const addButton = doc.createElement("button");
+  addButton.type = "button";
+  addButton.className = "meme-editor-add";
+  addButton.dataset.editorMemeAdd = "true";
+  addButton.setAttribute("aria-label", "Add meme");
+  addButton.textContent = "+";
+  wall.replaceChildren(...tiles, addButton);
+  return { wall, tiles, addButton };
+}
 
 /**
  * Repaint editable text from the current draft before wiring the page up.
@@ -57,11 +136,11 @@ function sourceMatchesPath(source, path, baseUrl) {
   }
 }
 
-function applyImageSettings(img, image, decorative) {
+function applyImageSettings(img, image, decorative, forceContain = false) {
   img.hidden = false;
   img.alt = decorative ? "" : image.alt || "";
   img.classList.remove(...FITS.map(fitClass), ...FOCUSES.map(focusClass));
-  img.classList.add(fitClass(image.fit), focusClass(image.focus));
+  img.classList.add(fitClass(forceContain ? "contain" : image.fit), focusClass(image.focus));
 }
 
 function createPreviewImage(doc, target) {
@@ -97,6 +176,8 @@ export function renderDraftImages(doc, draft, { assetBase = doc.baseURI, preview
 
     if (!path) {
       if (img) (img.closest(".meme-uploaded-media") || img).hidden = true;
+      const slot = target.querySelector(".meme-editor-slot");
+      if (slot) slot.hidden = false;
       continue;
     }
 
@@ -106,8 +187,10 @@ export function renderDraftImages(doc, draft, { assetBase = doc.baseURI, preview
     if (!img) img = createPreviewImage(doc, target);
     const visibilityNode = img.closest(".meme-uploaded-media") || img;
     visibilityNode.hidden = false;
+    const slot = target.querySelector(".meme-editor-slot");
+    if (slot) slot.hidden = true;
     const decorative = target.hasAttribute("data-edit-image-decorative") || Boolean(target.dataset.editMeme) || image.decorative === true;
-    applyImageSettings(img, image, decorative);
+    applyImageSettings(img, image, decorative, Boolean(target.dataset.editMeme));
     if (previewSource || !sourceMatchesPath(img.getAttribute("src"), path, doc.baseURI)) img.src = source;
   }
 }
@@ -123,6 +206,7 @@ export function isEditorInteraction(target) {
 export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate, assetBase, imagePreviews }) {
   const doc = frame.contentDocument;
   renderDraftText(doc, draft);
+  const memeEditor = syncMemeEditor(doc, draft);
   renderDraftImages(doc, draft, { assetBase, previews: imagePreviews });
   const style = doc.createElement("style");
   style.textContent = OVERLAY_STYLE;
@@ -318,17 +402,34 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
     });
   }
 
-  for (const node of doc.querySelectorAll("[data-edit-meme]")) {
-    on(node, "click", (event) => {
-      // Same reasoning as the [data-edit-image] handler above: a nested
-      // [data-edit] node (art.kicker / art.stamp) handles its own
-      // click-to-edit, and openMemePanel has no field for that text.
-      if (event.target.closest("[data-edit]")) return;
-      event.preventDefault();
-      event.stopPropagation();
-      onMemeClick(node, node.dataset.editMeme);
-    });
-  }
+  const bindMemeEditor = () => {
+    for (const node of doc.querySelectorAll("[data-edit-meme]")) {
+      on(node, "click", (event) => {
+        if (event.target.closest("[data-edit]")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onMemeClick(node, node.dataset.editMeme);
+      });
+    }
+
+    for (const addButton of doc.querySelectorAll("[data-editor-meme-add]")) {
+      on(addButton, "click", (event) => {
+        event.preventDefault();
+        const item = draft.appendMemeItem();
+        onDirty();
+        syncMemeEditor(doc, draft);
+        renderDraftImages(doc, draft, { assetBase, previews: imagePreviews });
+        bindMemeEditor();
+        const spec = `memes:items[key=${item.key}]`;
+        const anchor = Array.from(doc.querySelectorAll("[data-edit-meme]")).find(
+          (candidate) => candidate.dataset.editMeme === spec
+        );
+        if (anchor) onMemeClick(anchor, spec);
+      });
+    }
+  };
+
+  if (memeEditor) bindMemeEditor();
 
   return {
     detach() {
@@ -336,6 +437,9 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
       clearRefusal();
       style.remove();
       doc.querySelectorAll("[contenteditable]").forEach((node) => node.removeAttribute("contenteditable"));
+      if (memeEditor) {
+        doc.querySelectorAll("[data-editor-meme-tile], [data-editor-meme-add]").forEach((node) => node.remove());
+      }
     }
   };
 }

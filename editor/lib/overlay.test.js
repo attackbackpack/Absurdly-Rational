@@ -4,9 +4,12 @@ import {
   imageSource,
   imageSpecForTarget,
   isEditorInteraction,
+  memeItemsForEditor,
   renderDraftImages,
-  renderDraftText
+  renderDraftText,
+  syncMemeEditor
 } from "./overlay.js";
+import { createDraft } from "./draft.js";
 
 test("renderDraftText keeps pending or newly published text visible over an older build", () => {
   const nodes = [
@@ -51,6 +54,91 @@ test("ordinary link content is still treated as navigation", () => {
 test("image specs include images edited through the meme panel", () => {
   assert.equal(imageSpecForTarget({ dataset: { editImage: "site:home.hero.image" } }), "site:home.hero.image");
   assert.equal(imageSpecForTarget({ dataset: { editMeme: "memes:items[key=one]" } }), "memes:items[key=one].image");
+});
+
+test("meme editor items exclude legacy blank art but keep uploaded and neutral slots", () => {
+  const items = [
+    { key: "starter", visible: true, image: { path: "" }, art: { headline: "Starter art" } },
+    { key: "uploaded", visible: true, image: { path: "assets/uploads/meme.jpg" }, art: { headline: "Starter art" } },
+    { key: "hidden", visible: false, image: { path: "assets/uploads/hidden.jpg" }, art: { headline: "" } },
+    { key: "new", visible: true, image: { path: "" }, art: { headline: "" } }
+  ];
+
+  assert.deepEqual(
+    memeItemsForEditor(items, new Set(["new"])).map((item) => item.key),
+    ["uploaded", "new"]
+  );
+});
+
+class FakeElement {
+  constructor(tagName) {
+    this.tagName = tagName;
+    this.children = [];
+    this.dataset = {};
+    this.attributes = {};
+    this.hidden = false;
+  }
+
+  appendChild(node) {
+    this.children.push(node);
+    return node;
+  }
+
+  replaceChildren(...nodes) {
+    this.children = nodes;
+  }
+
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+}
+
+class FakeDocument {
+  constructor() {
+    this.body = { dataset: { page: "memes" } };
+    this.wall = new FakeElement("section");
+  }
+
+  createElement(tagName) {
+    return new FakeElement(tagName);
+  }
+
+  querySelector(selector) {
+    return selector === ".meme-wall" ? this.wall : null;
+  }
+}
+
+test("syncMemeEditor renders exactly one add control and reattaches a saved blank slot", () => {
+  const draft = createDraft(
+    {
+      site: {},
+      readings: {},
+      podcasts: {},
+      memes: {
+        items: [
+          { key: "starter", visible: true, image: { path: "", alt: "", fit: "cover", focus: "center" }, art: { headline: "Starter art" } }
+        ]
+      }
+    },
+    "abc"
+  );
+  const initial = syncMemeEditor(new FakeDocument(), draft);
+  assert.equal(initial.tiles.length, 0);
+  assert.equal(initial.addButton.dataset.editorMemeAdd, "true");
+
+  const item = draft.appendMemeItem();
+  const current = syncMemeEditor(new FakeDocument(), draft);
+  assert.equal(current.tiles.length, 1);
+  assert.equal(current.tiles[0].dataset.editMeme, `memes:items[key=${item.key}]`);
+  assert.equal(current.wall.children.filter((node) => node.dataset.editorMemeAdd).length, 1);
+
+  const saved = JSON.parse(
+    Buffer.from(draft.buildPayload("save").files.find((file) => file.path === "_data/memes.json").contentBase64, "base64")
+  );
+  const reattached = createDraft({ site: {}, readings: {}, podcasts: {}, memes: saved }, "def");
+  const afterReattach = syncMemeEditor(new FakeDocument(), reattached);
+  assert.deepEqual(afterReattach.tiles.map((tile) => tile.dataset.editMeme), [`memes:items[key=${item.key}]`]);
+  assert.equal(afterReattach.wall.children.filter((node) => node.dataset.editorMemeAdd).length, 1);
 });
 
 test("newly committed local images use the exact GitHub commit asset base", () => {
@@ -98,8 +186,8 @@ test("renderDraftImages replaces a stale deployed image with the current committ
     hasAttribute() {
       return false;
     },
-    querySelector() {
-      return img;
+    querySelector(selector) {
+      return selector === "img.image-object" ? img : null;
     }
   };
   const doc = {
@@ -131,8 +219,8 @@ test("renderDraftImages creates a visible image over stale built-in artwork", ()
     hasAttribute() {
       return false;
     },
-    querySelector() {
-      return appended;
+    querySelector(selector) {
+      return selector === "img.image-object" ? appended : null;
     }
   };
   const doc = {

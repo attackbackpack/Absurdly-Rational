@@ -423,6 +423,7 @@ button { font: inherit; }
 
 .page-shell { position: relative; z-index: 1; padding: 180px 0 130px; }
 .page-intro { max-width: 62rem; padding-bottom: 96px; }
+.page-intro--meme { padding-bottom: 48px; }
 .page-lede {
   max-width: 68ch;
   margin: 32px 0 0;
@@ -851,8 +852,7 @@ button { font: inherit; }
 .meme-art--snake-oil { background: #15131a; }
 .meme-art--read-less { background: #10151a; }
 .meme-uploaded-media { position: absolute; inset: 0; display: block; overflow: hidden; background: var(--surface-strong); }
-.meme-uploaded-media .meme-uploaded-image { position: absolute; inset: 0; transition: transform 600ms var(--ease); }
-.meme-tile:hover .meme-uploaded-image { transform: scale(1.035); }
+.meme-uploaded-media .meme-uploaded-image { position: absolute; inset: 0; background: var(--surface-strong); object-fit: contain; object-position: center; }
 .meme-tile-label {
   position: absolute;
   right: 14px;
@@ -999,6 +999,7 @@ button { font: inherit; }
   .home-context { gap: 48px; }
   .page-shell { padding-top: 145px; }
   .page-intro { padding-bottom: 70px; }
+  .page-intro--meme { padding-bottom: 40px; }
   .reading-topic-shell { padding-top: 126px; }
   .back-link { margin-bottom: 44px; }
   .topic-door--evidence, .topic-door--policy, .topic-door--thinking, .topic-door--hospital { grid-column: 1 / -1; }

@@ -10,56 +10,25 @@ permalink: /memes.html
   <main class="page-shell">
     <header class="page-intro page-intro--meme">
       <h1 data-edit="memes:page.title">{{ memes.page.title | escape }}</h1>
-      <p class="page-lede" data-edit="memes:page.lede">{{ memes.page.lede | escape }}</p>
     </header>
 
-    <aside class="starter-note" aria-label="{{ memes.page.starter_note_aria }}">
-      <span class="starter-note-mark" aria-hidden="true">AR</span>
-      <p><strong data-edit="memes:page.starter_note.label">{{ memes.page.starter_note.label | escape }}</strong> <span data-edit="memes:page.starter_note.description">{{ memes.page.starter_note.description | escape }}</span></p>
-    </aside>
-
-    <section class="meme-wall" aria-label="{{ memes.page.wall_aria }}">
+    <section class="meme-wall" aria-label="{{ memes.page.title | escape }}">
       {% for item in memes.items %}
         {% unless item.visible == false %}
-          {% assign layout_class = "" %}
-          {% case item.layout %}
-            {% when "wide" %}{% assign layout_class = "meme-tile--wide" %}
-            {% when "tall" %}{% assign layout_class = "meme-tile--tall" %}
-            {% when "wide-low" %}{% assign layout_class = "meme-tile--wide meme-tile--low" %}
-            {% when "small" %}{% assign layout_class = "meme-tile--small" %}
-            {% when "standard" %}{% assign layout_class = "" %}
-          {% endcase %}
-          {% assign variant_class = "meme-art--rooster" %}
-          {% case item.variant %}
-            {% when "rooster" %}{% assign variant_class = "meme-art--rooster" %}
-            {% when "big-reality" %}{% assign variant_class = "meme-art--big-reality" %}
-            {% when "receipts" %}{% assign variant_class = "meme-art--receipts" %}
-            {% when "conflicts" %}{% assign variant_class = "meme-art--conflicts" %}
-            {% when "snake-oil" %}{% assign variant_class = "meme-art--snake-oil" %}
-            {% when "read-less" %}{% assign variant_class = "meme-art--read-less" %}
-          {% endcase %}
-          <button class="meme-tile {{ layout_class }}" type="button" data-edit-meme="memes:items[key={{ item.key }}]" aria-label="{{ item.aria_label | escape }}" data-meme-title="{{ item.title | escape }}" data-meme-caption="{{ item.caption | escape }}" data-meme-image-alt="{{ item.image.alt | escape }}">
-            {% assign meme_image_path = item.image.path | default: "" %}
-            {% if meme_image_path != empty %}
+          {% assign meme_image_path = item.image.path | default: "" %}
+          {% if meme_image_path != empty %}
+            <button class="meme-tile" type="button" data-edit-meme="memes:items[key={{ item.key }}]" aria-label="Open meme: {{ item.image.alt | escape }}" data-meme-image-alt="{{ item.image.alt | escape }}">
               <span class="meme-uploaded-media" aria-hidden="true">
                 {% include image.html image=item.image decorative=true class_name="meme-uploaded-image" %}
               </span>
-            {% else %}
-              <span class="meme-art {{ variant_class }}" aria-hidden="true">
-                {% if item.art.kicker %}<span class="meme-art-kicker" data-edit="memes:items[key={{ item.key }}].art.kicker">{{ item.art.kicker | escape }}</span>{% endif %}
-                <span class="meme-art-text">{{ item.art.headline | escape | newline_to_br }}</span>
-                {% if item.art.accent %}<span class="meme-art-accent">{{ item.art.accent | escape | newline_to_br }}</span>{% endif %}
-                {% if item.art.stamp %}<span class="meme-art-stamp" data-edit="memes:items[key={{ item.key }}].art.stamp">{{ item.art.stamp | escape }}</span>{% endif %}
-              </span>
-            {% endif %}
-            <span class="meme-tile-label" data-edit="memes:page.tile_action_label">{{ memes.page.tile_action_label | escape }}</span>
-          </button>
+            </button>
+          {% endif %}
         {% endunless %}
       {% endfor %}
     </section>
   </main>
 
-  <dialog class="meme-dialog" id="meme-dialog" aria-labelledby="meme-dialog-title" aria-describedby="meme-dialog-description meme-dialog-status">
+  <dialog class="meme-dialog" id="meme-dialog" aria-labelledby="meme-dialog-title" aria-describedby="meme-dialog-status">
     <div class="meme-dialog-shell">
       <header class="meme-dialog-header">
         <div>
@@ -68,7 +37,6 @@ permalink: /memes.html
         <button class="dialog-close" type="button" data-dialog-close>{{ memes.page.dialog_close_label }}</button>
       </header>
       <div class="meme-display" id="meme-display"></div>
-      <p class="meme-dialog-description" id="meme-dialog-description"></p>
       <div class="meme-dialog-footer">
         <p class="meme-dialog-status" id="meme-dialog-status" aria-live="polite"></p>
         <div class="meme-dialog-controls" aria-label="{{ memes.page.dialog_navigation_label }}">

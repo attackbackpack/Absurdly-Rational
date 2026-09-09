@@ -24,6 +24,42 @@ export const UPLOAD_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const MAX_UPLOAD_DIMENSION = 6000;
 
+const MEME_KEY = /^[A-Za-z0-9_-]+$/;
+
+export function nextMemeKey(items) {
+  const used = new Set((Array.isArray(items) ? items : []).map((item) => item && item.key));
+  let number = 1;
+  while (used.has(`meme-${number}`)) number += 1;
+  return `meme-${number}`;
+}
+
+export function blankMemeItem(key) {
+  if (!MEME_KEY.test(String(key))) {
+    throw new Error(`Invalid meme key: ${key}`);
+  }
+  return {
+    key,
+    layout: "standard",
+    variant: "rooster",
+    title: "New meme",
+    aria_label: "Open meme",
+    caption: "",
+    visible: true,
+    image: {
+      path: "",
+      alt: "",
+      fit: "contain",
+      focus: "center"
+    },
+    art: {
+      kicker: "",
+      headline: "",
+      accent: "",
+      stamp: ""
+    }
+  };
+}
+
 /**
  * A short, stable tag derived from the file's bytes.
  *
@@ -133,6 +169,7 @@ export function createDraft(files, baseCommitSha) {
   const uploads = new Map();
   // Which staged file belongs to which image slot, so re-picking replaces.
   const stagedBySpec = new Map();
+  const createdMemeKeys = new Set();
   // Moves when rebase() re-points the draft at a newer branch head.
   let currentSha = baseCommitSha;
 
@@ -157,6 +194,21 @@ export function createDraft(files, baseCommitSha) {
     write(spec, value) {
       const { file, segments } = locate(spec);
       setValue(working[file], segments, value);
+    },
+
+    appendMemeItem() {
+      if (!working.memes || typeof working.memes !== "object" || Array.isArray(working.memes)) {
+        working.memes = {};
+      }
+      if (!Array.isArray(working.memes.items)) working.memes.items = [];
+      const item = blankMemeItem(nextMemeKey(working.memes.items));
+      working.memes.items.push(item);
+      createdMemeKeys.add(item.key);
+      return item;
+    },
+
+    isNewMeme(key) {
+      return createdMemeKeys.has(key);
     },
 
     /**

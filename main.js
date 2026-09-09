@@ -31,8 +31,6 @@
   }
 
   var display = document.getElementById("meme-display");
-  var title = document.getElementById("meme-dialog-title");
-  var description = document.getElementById("meme-dialog-description");
   var status = document.getElementById("meme-dialog-status");
   var closeButton = dialog.querySelector("[data-dialog-close]");
   var previousButton = dialog.querySelector("[data-meme-prev]");
@@ -44,22 +42,14 @@
     activeIndex = (index + tiles.length) % tiles.length;
     var tile = tiles[activeIndex];
     var uploadedImage = tile.querySelector(".meme-uploaded-image");
-    var artwork = uploadedImage
-      ? uploadedImage.cloneNode(true)
-      : tile.querySelector(".meme-art").cloneNode(true);
-
-    if (uploadedImage) {
-      artwork.classList.remove("image-fit-cover");
-      artwork.classList.add("image-fit-contain", "meme-dialog-image");
-      artwork.removeAttribute("aria-hidden");
-      artwork.alt = tile.dataset.memeImageAlt || "";
-    } else {
-      artwork.removeAttribute("aria-hidden");
-    }
+    if (!uploadedImage) return;
+    var artwork = uploadedImage.cloneNode(true);
+    artwork.classList.remove("image-fit-cover");
+    artwork.classList.add("image-fit-contain", "meme-dialog-image");
+    artwork.removeAttribute("aria-hidden");
+    artwork.alt = tile.dataset.memeImageAlt || "";
 
     display.replaceChildren(artwork);
-    title.textContent = tile.dataset.memeTitle || "Meme";
-    description.textContent = tile.dataset.memeCaption || "";
     status.textContent = "Meme " + (activeIndex + 1) + " of " + tiles.length;
   }
 

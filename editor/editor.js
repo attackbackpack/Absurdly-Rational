@@ -1,7 +1,7 @@
 import { createApi } from "./lib/api.js";
 import { createDraft, commitMessage, describeFiles } from "./lib/draft.js";
 import { attachOverlay, renderDraftImages } from "./lib/overlay.js";
-import { openImagePanel, openMemePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
+import { openImagePanel, openSettingsPanel, closePanel } from "./lib/panels.js";
 import { resolvePreviewPath } from "./lib/preview.js";
 import { resolveApiBase } from "./lib/apibase.js";
 
@@ -66,25 +66,16 @@ function onImageClick(anchor, spec) {
 }
 
 function onMemeClick(anchor, spec) {
-  // The meme frame carries data-edit-meme, so it cannot also carry
-  // data-edit-image without two handlers fighting over one click. The panel
-  // hands off to the image panel instead. A meme's picture is shown in the
-  // dialog with item.image.alt as its alt text (see main.js), so it is a
-  // meaningful image and needs a description — never decorative.
-  openMemePanel({
+  // A meme is an image-only card. Reuse the image panel directly so adding a
+  // card and replacing an existing image take the same short path.
+  openImagePanel({
     anchor,
-    spec,
+    spec: `${spec}.image`,
     draft,
     onDirty,
-    onEditImage: (imageAnchor, imageSpec) =>
-      openImagePanel({
-        anchor: imageAnchor,
-        spec: imageSpec,
-        draft,
-        onDirty,
-        onPreview: rememberImagePreview,
-        decorative: false
-      })
+    onPreview: rememberImagePreview,
+    decorative: false,
+    meme: true
   });
 }
 

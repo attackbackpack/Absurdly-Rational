@@ -6,6 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { seedImageWrites } from "../editor/lib/panels.js";
+import { createDraft } from "../editor/lib/draft.js";
 import { textRejection, altRejection } from "../editor/lib/rules.js";
 
 // scripts/validate-content.js is a top-level script with no exports: requiring
@@ -324,6 +325,20 @@ test("a duplicate meme key fails validation", () => {
   const result = validate({ site: baseSite(), memesData });
   assert.equal(result.ok, false);
   assert.match(result.output, /memes\.json.*items.*key.*duplicate/i);
+});
+
+test("an appended blank meme is schema-valid and has no public image yet", () => {
+  const draft = createDraft(
+    { site: {}, readings: {}, podcasts: {}, memes: { items: [] } },
+    "abc"
+  );
+  const item = draft.appendMemeItem();
+  const result = validate({ site: baseSite(), memesData: { items: draft.read("memes:items") } });
+
+  assert.ok(result.ok, result.output);
+  assert.match(item.key, /^meme-\d+$/);
+  assert.equal(item.image.path, "");
+  assert.equal(item.art.headline, "");
 });
 
 test("a duplicate podcast guest key fails validation", () => {

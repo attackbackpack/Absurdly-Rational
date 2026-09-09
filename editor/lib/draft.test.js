@@ -7,6 +7,7 @@ import {
   uploadTag,
   commitMessage,
   describeFiles,
+  blankMemeItem,
   MAX_UPLOAD_BYTES,
   MAX_UPLOAD_DIMENSION
 } from "./draft.js";
@@ -134,6 +135,32 @@ test("buildPayload matches the repository's existing JSON formatting", () => {
   const text = Buffer.from(draft.buildPayload("m").files[0].contentBase64, "base64").toString("utf8");
   assert.equal(text.endsWith("\n"), true, "_data/site.json ends with a trailing newline");
   assert.ok(text.includes('\n  "home"'), "two-space indent");
+});
+
+test("appendMemeItem creates unique schema-shaped blank records", () => {
+  const draft = createDraft(
+    {
+      site: {},
+      readings: {},
+      podcasts: {},
+      memes: { items: [blankMemeItem("meme-1")] }
+    },
+    "abc"
+  );
+
+  const first = draft.appendMemeItem();
+  const second = draft.appendMemeItem();
+
+  assert.equal(first.key, "meme-2");
+  assert.equal(second.key, "meme-3");
+  assert.equal(first.visible, true);
+  assert.equal(first.image.path, "");
+  assert.equal(first.image.alt, "");
+  assert.equal(first.image.fit, "contain");
+  assert.equal(first.image.focus, "center");
+  assert.equal(first.art.headline, "");
+  assert.equal(draft.read("memes:items").length, 3);
+  assert.equal(draft.isDirty(), true);
 });
 
 test("stageUpload records the file and returns its repository path", () => {

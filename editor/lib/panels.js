@@ -1,6 +1,6 @@
 import { FITS, FOCUSES, fitClass, focusClass } from "./imagefit.js";
 import { uploadRejection } from "./draft.js";
-import { fieldsForPage, guestLinkFields, MEME_FIELDS } from "./pagefields.js";
+import { fieldsForPage, guestLinkFields } from "./pagefields.js";
 import { textRejection, altRejection } from "./rules.js";
 
 let closeOpenPanel = null;
@@ -193,12 +193,13 @@ export function seedImageWrites(image, decorative) {
   return writes;
 }
 
-export function openImagePanel({ anchor, spec, draft, onDirty, onPreview, decorative = false }) {
+export function openImagePanel({ anchor, spec, draft, onDirty, onPreview, decorative = false, meme = false }) {
   const { root, close } = panelRoot();
   const box = document.createElement("div");
   box.className = "ar-panel-box";
   const image = draft.read(spec);
   let img = anchor.querySelector("img.image-object");
+  const isMeme = meme || Boolean(anchor.dataset.editMeme);
   // _includes/image.html renders alt="" when `include.decorative or
   // image.decorative`; mirror both inputs. `decorative` comes from the template
   // via the call site (door art is always decorative there, whatever the data
@@ -218,14 +219,15 @@ export function openImagePanel({ anchor, spec, draft, onDirty, onPreview, decora
   };
 
   const heading = document.createElement("h2");
-  heading.textContent = "Image";
+  heading.textContent = isMeme ? "Meme image" : "Image";
   box.appendChild(heading);
 
   if (!img) {
     const notice = document.createElement("p");
     notice.className = "ar-notice";
-    notice.textContent =
-      "This spot currently shows the built-in artwork. Choose an image to preview it here immediately.";
+    notice.textContent = isMeme
+      ? "Choose an image to add this meme. The preview appears here immediately."
+      : "This spot currently shows the built-in artwork. Choose an image to preview it here immediately.";
     box.appendChild(notice);
   }
 
@@ -318,6 +320,8 @@ export function openImagePanel({ anchor, spec, draft, onDirty, onPreview, decora
     }
     if (img) {
       selectionStatus.textContent = `Selected “${file.name}”. The preview now shows the image that will upload.`;
+    } else if (isMeme) {
+      selectionStatus.textContent = `Selected “${file.name}”. It will add this meme to the gallery after publishing.`;
     } else {
       selectionStatus.textContent = `Selected “${file.name}”. It will replace the built-in artwork after publishing.`;
     }
@@ -355,116 +359,36 @@ export function openImagePanel({ anchor, spec, draft, onDirty, onPreview, decora
 
   const pickerLabel = document.createElement("label");
   pickerLabel.className = "ar-field";
-  pickerLabel.textContent = "Replace image";
+  pickerLabel.textContent = isMeme && !img ? "Choose image" : "Replace image";
   pickerLabel.appendChild(picker);
   box.appendChild(pickerLabel);
   box.appendChild(problem);
   box.appendChild(selectionStatus);
 
-  box.appendChild(
-    select("Image fit", FITS, image.fit || "cover", (value) => {
-      completeShape();
-      draft.write(`${spec}.fit`, value);
-      if (img) {
-        img.classList.remove(...FITS.map(fitClass));
-        img.classList.add(fitClass(value));
-      }
-      onDirty();
-    })
-  );
-
-  box.appendChild(
-    select("Crop focus", FOCUSES, image.focus || "center", (value) => {
-      completeShape();
-      draft.write(`${spec}.focus`, value);
-      if (img) {
-        img.classList.remove(...FOCUSES.map(focusClass));
-        img.classList.add(focusClass(value));
-      }
-      onDirty();
-    })
-  );
-
-  const done = document.createElement("button");
-  done.textContent = "Done";
-  done.addEventListener("click", close);
-  box.appendChild(done);
-
-  present(root, box);
-}
-
-export function openMemePanel({ anchor, spec, draft, onDirty, onEditImage }) {
-  const { root, close } = panelRoot();
-  const box = document.createElement("div");
-  box.className = "ar-panel-box";
-
-  const heading = document.createElement("h2");
-  heading.textContent = "Meme";
-  box.appendChild(heading);
-
-  const note = document.createElement("p");
-  note.className = "ar-notice";
-  note.textContent = "Title and caption appear when someone opens this meme, not on the wall.";
-  box.appendChild(note);
-
-  const drifted = [];
-  for (const [suffix, label, type] of MEME_FIELDS) {
-    const fieldSpec = `${spec}.${suffix}`;
-    let current;
-    try {
-      current = draft.read(fieldSpec);
-    } catch (error) {
-      // A key that is genuinely absent is fine to leave out: art.kicker,
-      // art.accent and art.stamp are optional in .pages.yml. Anything else —
-      // a renamed key, a preview showing a meme the draft no longer has — is
-      // drift, and a bare `catch { continue }` used to hide it completely:
-      // the panel just came up with fewer fields than it should have.
-      if (/: no such key$/.test(error.message)) continue;
-      drifted.push(`${label}: ${error.message}`);
-      continue;
-    }
+  if (!isMeme) {
     box.appendChild(
-      field(
-        label,
-        current,
-        (value) => {
-          draft.write(fieldSpec, value);
-          onDirty();
-        },
-        type,
-        (value) => textRejection(fieldSpec, value)
-      )
+      select("Image fit", FITS, image.fit || "cover", (value) => {
+        completeShape();
+        draft.write(`${spec}.fit`, value);
+        if (img) {
+          img.classList.remove(...FITS.map(fitClass));
+          img.classList.add(fitClass(value));
+        }
+        onDirty();
+      })
     );
-  }
 
-  // The picture reaches the image panel from here rather than from its own
-  // annotation on the tile: the tile IS the [data-edit-meme] target, so a
-  // [data-edit-image] on the same element would give two handlers one click,
-  // and one on the art inside it would swallow the click before the meme
-  // panel could ever open. One click opens this panel; this button opens the
-  // picture controls.
-  if (onEditImage) {
-    let hasImage = true;
-    try {
-      draft.read(`${spec}.image`);
-    } catch {
-      hasImage = false;
-    }
-    if (hasImage) {
-      const picture = document.createElement("button");
-      picture.type = "button";
-      picture.textContent = "Change the picture…";
-      picture.addEventListener("click", () => onEditImage(anchor, `${spec}.image`));
-      box.appendChild(picture);
-    }
-  }
-
-  if (drifted.length) {
-    const problem = document.createElement("p");
-    problem.className = "ar-problem";
-    problem.setAttribute("role", "alert");
-    problem.textContent = `Some fields could not be shown: ${drifted.join("; ")}. Reload the preview and try again.`;
-    box.appendChild(problem);
+    box.appendChild(
+      select("Crop focus", FOCUSES, image.focus || "center", (value) => {
+        completeShape();
+        draft.write(`${spec}.focus`, value);
+        if (img) {
+          img.classList.remove(...FOCUSES.map(focusClass));
+          img.classList.add(focusClass(value));
+        }
+        onDirty();
+      })
+    );
   }
 
   const done = document.createElement("button");

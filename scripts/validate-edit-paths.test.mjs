@@ -67,6 +67,12 @@ test("memes.html's meme frame is now scanned", () => {
   assert.equal(memeSpecs[0].spec, "memes:items[key={{ item.key }}]");
 });
 
+test("memes.html keeps the public bank to uploaded images", () => {
+  const html = fs.readFileSync(new URL("../memes.html", import.meta.url), "utf8");
+  assert.match(html, /meme_image_path != empty/);
+  assert.doesNotMatch(html, /meme-art|starter-note|meme-tile-label|data-meme-title|data-meme-caption/);
+});
+
 // --- assertResolves
 
 const fixture = {
