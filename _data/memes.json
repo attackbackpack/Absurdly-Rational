@@ -148,6 +148,153 @@
         "accent": "",
         "stamp": "CITE"
       }
+    },
+    {
+      "key": "meme-1",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_4154-1au5cvg0n0bb.jpeg",
+        "alt": "Gotta love those executive orders on vaccines!",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-2",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_3817-0tl14q20t8jj.jpeg",
+        "alt": "Glutathione intended for oral consumption shall not be injected (unless you are an idiot or a compounding pharmacy).",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-3",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2294-058oapa0v1j5.jpeg",
+        "alt": "Anti-vaxxers are so good at ignoring the consequences of their beliefs in practice.",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-4",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_3747-0wahxj419g6e.jpeg",
+        "alt": "You don’t need a younger woman, you need a woman who recognizes the signs of a stroke",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-5",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2244-00m4fps08bof.jpeg",
+        "alt": "I always be shilling, but never be getting money.",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-6",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2187-0izc1zp1iq8l.jpeg",
+        "alt": "The victim of my own wishes!",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-7",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "",
+        "alt": "",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
     }
   ]
 }
