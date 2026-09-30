@@ -284,6 +284,132 @@
       "caption": "",
       "visible": true,
       "image": {
+        "path": "assets/uploads/img_3446-0vgl7x31nd16.jpeg",
+        "alt": "RFK Jr. kicks off Skynet",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-8",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2199-1n7wop61xphb.jpeg",
+        "alt": "Oh the irony",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-9",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2173-1lyezlw1bmfx.jpeg",
+        "alt": "I miss the FDA",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-10",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2159-0icyf4e0t697.jpeg",
+        "alt": "RFK Jr. logic is not logic",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-11",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2148-09pr96v0b3cn.jpeg",
+        "alt": "Cognitive screening",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-12",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
+        "path": "assets/uploads/img_2119-01oox5m176tx.jpeg",
+        "alt": "Treat your high blood pressure",
+        "fit": "contain",
+        "focus": "center"
+      },
+      "art": {
+        "kicker": "",
+        "headline": "",
+        "accent": "",
+        "stamp": ""
+      }
+    },
+    {
+      "key": "meme-13",
+      "layout": "standard",
+      "variant": "rooster",
+      "title": "New meme",
+      "aria_label": "Open meme",
+      "caption": "",
+      "visible": true,
+      "image": {
         "path": "",
         "alt": "",
         "fit": "contain",
