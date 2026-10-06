@@ -39,7 +39,7 @@ permalink: /podcasts.html
         <h2 id="guest-title" data-edit="podcasts:page.guests_heading">{{ podcasts.guests_heading | escape }}</h2>
         <p data-edit="podcasts:page.guests_description">{{ podcasts.guests_description | escape }}</p>
       </div>
-      <div class="guest-grid">
+      <div class="guest-grid" data-editor-reorder-list="podcasts:guests" data-editor-reorder-key-field="key">
         {% for guest in site.data.podcasts.guests %}
           {% assign guest_class = "architect" %}
           {% case guest.class_name %}
@@ -47,7 +47,7 @@ permalink: /podcasts.html
             {% when "architect" %}{% assign guest_class = "architect" %}
           {% endcase %}
         {% unless guest.visible == false %}
-        <article class="guest-card guest-card--{{ guest_class }}">
+        <article class="guest-card guest-card--{{ guest_class }}" data-editor-reorder-key="{{ guest.key | escape }}">
           {% assign guest_image_path = guest.image.path | default: "" %}
           <div class="guest-art guest-art--{{ guest_class }}{% if guest_image_path != empty %} guest-art--image{% endif %}" data-edit-image="podcasts:guests[key={{ guest.key }}].image"{% if guest_image_path == empty %} aria-hidden="true"{% endif %}>
             {% if guest_image_path != empty %}

@@ -9,8 +9,9 @@ pull request are not part of this workflow.
 1. Open the editor and sign in with the editor password.
 2. Use the site navigation inside the editor to open the page you want to change.
 3. Hover over highlighted text or images and make the edit.
-4. Click **Save & publish**, then confirm that the change should update the public website.
-5. Wait about a minute for GitHub Pages to rebuild the site, then click **Reload site**.
+4. To change the order of cards, click **Reorder cards**. Drag a grip, or focus a grip and press Space, use the arrow keys, then press Space to drop. Press Escape to cancel, or click **Done rearranging** to leave the mode.
+5. Click **Save & publish**, then confirm that the change should update the public website.
+6. Wait about a minute for GitHub Pages to rebuild the site, then click **Reload site**.
 
 Each publish creates a Git commit on `main`, which provides a history of every change. If a
 mistake is small, correct it in the editor and publish again. For a larger rollback, revert the

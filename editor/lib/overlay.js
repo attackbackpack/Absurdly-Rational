@@ -2,6 +2,7 @@ import { normalizeEditText, editTextChanged } from "./editText.js";
 import { FITS, FOCUSES, fitClass, focusClass } from "./imagefit.js";
 import { isInternalHref, fragmentId } from "./links.js";
 import { textRejection } from "./rules.js";
+import { createReorderController, renderDraftOrder } from "./reorder.js";
 
 const OVERLAY_STYLE = `
 [data-edit], [data-edit-image], [data-edit-meme] { outline-offset: 3px; cursor: text; }
@@ -57,6 +58,7 @@ function createMemeEditorTile(doc, item) {
   tile.className = "meme-tile";
   tile.dataset.editorMemeTile = "true";
   tile.dataset.editMeme = `memes:items[key=${item.key}]`;
+  tile.dataset.editorReorderKey = item.key;
   tile.dataset.memeImageAlt = item.image && typeof item.image.alt === "string" ? item.image.alt : "";
   tile.setAttribute(
     "aria-label",
@@ -89,6 +91,8 @@ export function syncMemeEditor(doc, draft) {
   if (!wall) return null;
 
   const tiles = memeItemsFromDraft(draft).map((item) => createMemeEditorTile(doc, item));
+  wall.dataset.editorReorderList = "memes:items";
+  wall.dataset.editorReorderKeyField = "key";
   const addButton = doc.createElement("button");
   addButton.type = "button";
   addButton.className = "meme-editor-add";
@@ -203,14 +207,22 @@ export function isEditorInteraction(target) {
   );
 }
 
-export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate, assetBase, imagePreviews }) {
+export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick, onNavigate, assetBase, imagePreviews, onReorderMessage }) {
   const doc = frame.contentDocument;
   renderDraftText(doc, draft);
   const memeEditor = syncMemeEditor(doc, draft);
+  renderDraftOrder(doc, draft);
   renderDraftImages(doc, draft, { assetBase, previews: imagePreviews });
   const style = doc.createElement("style");
   style.textContent = OVERLAY_STYLE;
   doc.head.appendChild(style);
+
+  const reorderController = createReorderController({
+    doc,
+    draft,
+    onChange: onDirty,
+    onMessage: onReorderMessage
+  });
 
   const listeners = [];
   const on = (target, type, handler, options) => {
@@ -419,6 +431,7 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
         onDirty();
         syncMemeEditor(doc, draft);
         renderDraftImages(doc, draft, { assetBase, previews: imagePreviews });
+        reorderController.refresh();
         bindMemeEditor();
         const spec = `memes:items[key=${item.key}]`;
         const anchor = Array.from(doc.querySelectorAll("[data-edit-meme]")).find(
@@ -432,7 +445,14 @@ export function attachOverlay({ frame, draft, onDirty, onImageClick, onMemeClick
   if (memeEditor) bindMemeEditor();
 
   return {
+    setReorderMode(enabled) {
+      reorderController.setEnabled(enabled);
+    },
+    cancelReorder() {
+      reorderController.cancel();
+    },
     detach() {
+      reorderController.detach();
       listeners.forEach((remove) => remove());
       clearRefusal();
       style.remove();

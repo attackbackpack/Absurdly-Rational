@@ -20,12 +20,15 @@ const status = document.getElementById("status");
 const saveButton = document.getElementById("save-button");
 const reloadButton = document.getElementById("reload-button");
 const toolbarTitle = document.getElementById("toolbar-title");
+const reorderButton = document.getElementById("reorder-button");
+const reorderHelp = document.getElementById("reorder-help");
 
 const PAGE_NAMES = { home: "homepage", readings: "readings", podcasts: "podcasts", memes: "meme bank" };
 const GITHUB_ASSET_ROOT = "https://raw.githubusercontent.com/attackbackpack/Absurdly-Rational/";
 
 let draft = null;
 let overlay = null;
+let reorderMode = false;
 let imageAssetBase = new URL("/", location.href).href;
 const imagePreviews = new Map();
 
@@ -41,6 +44,18 @@ function setStatus(message) {
 function onDirty() {
   saveButton.disabled = !draft || !draft.isDirty();
   setStatus(draft && draft.isDirty() ? "Unsaved changes" : "");
+}
+
+function setReorderMode(enabled) {
+  if (!overlay) return;
+  reorderMode = Boolean(enabled);
+  reorderButton.textContent = reorderMode ? "Done rearranging" : "Reorder cards";
+  reorderButton.setAttribute("aria-pressed", String(reorderMode));
+  reorderHelp.hidden = !reorderMode;
+  reorderHelp.textContent = reorderMode
+    ? "Drag a grip, or focus one and press Space, use the arrow keys, then press Space to drop. Escape cancels."
+    : "";
+  overlay.setReorderMode(reorderMode);
 }
 
 function rememberImagePreview(spec, path, url) {
@@ -108,8 +123,13 @@ frame.addEventListener("load", () => {
     onMemeClick,
     onNavigate,
     assetBase: imageAssetBase,
-    imagePreviews
+    imagePreviews,
+    onReorderMessage: (message) => {
+      if (reorderMode && message) reorderHelp.textContent = message;
+    }
   });
+  reorderButton.disabled = false;
+  overlay.setReorderMode(reorderMode);
   const page = frame.contentDocument?.body?.dataset.page || "";
   toolbarTitle.textContent = `Editing the ${PAGE_NAMES[page] || "site"}`;
   // onDirty() alone is authoritative for status: "Unsaved changes" when the
@@ -198,6 +218,8 @@ document.getElementById("settings-button").addEventListener("click", () => {
   openSettingsPanel({ draft, onDirty, page });
 });
 
+reorderButton.addEventListener("click", () => setReorderMode(!reorderMode));
+
 async function handleConflict() {
   const pending = describeFiles(draft.changedFiles());
   let content;
@@ -221,6 +243,9 @@ async function handleConflict() {
 }
 
 saveButton.addEventListener("click", async () => {
+  // Saving is a document action. Restore any in-progress drag or keyboard
+  // pickup before reading the draft payload so only a completed drop persists.
+  if (overlay) overlay.cancelReorder();
   // A panel left open keeps writing into whatever `draft` object it closed
   // over at open time; after a successful save that object is replaced out
   // from under it, so any further panel edits would silently vanish. Saving
@@ -285,8 +310,12 @@ saveButton.addEventListener("click", async () => {
       onMemeClick,
       onNavigate,
       assetBase: imageAssetBase,
-      imagePreviews
+      imagePreviews,
+      onReorderMessage: (message) => {
+        if (reorderMode && message) reorderHelp.textContent = message;
+      }
     });
+    overlay.setReorderMode(reorderMode);
     // onDirty() re-derives status/button state from the fresh (clean) draft,
     // which would clear the success message we just set — restore it after.
     onDirty();

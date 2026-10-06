@@ -27,9 +27,11 @@ sitemap: false
     <header id="toolbar">
       <span id="toolbar-title">Editing the homepage</span>
       <span id="status" role="status"></span>
+      <button type="button" id="reorder-button" aria-pressed="false" aria-describedby="reorder-help" disabled>Reorder cards</button>
       <button type="button" id="settings-button">Page settings</button>
       <button type="button" id="reload-button">Reload site</button>
       <button type="button" id="save-button" disabled>Save &amp; publish</button>
+      <span id="reorder-help" aria-live="polite" hidden></span>
     </header>
     <iframe id="preview" title="Website being edited"></iframe>
   </div>

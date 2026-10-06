@@ -13,9 +13,10 @@ permalink: /readings.html
       <p class="page-lede" data-edit="readings:page.lede">{{ readings.page.lede | escape }}</p>
     </header>
 
-    <section class="topic-index" aria-label="{{ readings.page.topic_index_aria }}">
+    <section class="topic-index" aria-label="{{ readings.page.topic_index_aria }}" data-editor-reorder-list="readings:topics" data-editor-reorder-key-field="slug" data-editor-reorder-order-field="order" data-editor-reorder-slot-count="4">
       {% assign topics = readings.topics | sort: "order" %}
       {% for topic in topics %}
+        {% assign topic_slot = forloop.index0 | modulo: 4 %}
         {% assign topic_posts = readings.posts | where: "category", topic.slug | where: "visible", true %}
         {% assign topic_class = "evidence" %}
         {% case topic.slug %}
@@ -24,7 +25,7 @@ permalink: /readings.html
           {% when "thinking" %}{% assign topic_class = "thinking" %}
           {% when "hospital" %}{% assign topic_class = "hospital" %}
         {% endcase %}
-        <a class="topic-door topic-door--{{ topic_class }}" href="{{ topic.path | relative_url }}">
+        <a class="topic-door topic-door--{{ topic_class }}" href="{{ topic.path | relative_url }}" data-editor-reorder-key="{{ topic.slug | escape }}" data-editor-reorder-slot="{{ topic_slot }}">
           <span class="topic-door-signal" aria-hidden="true"><span></span><span></span><span></span></span>
           <span class="topic-door-copy">
             <span class="topic-door-heading">

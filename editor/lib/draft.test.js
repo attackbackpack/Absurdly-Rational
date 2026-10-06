@@ -107,6 +107,89 @@ test("write works through an array key match", () => {
   assert.equal(draft.read("site:home.formats[key=readings].title"), "Essays");
 });
 
+test("reordering visible posts preserves hidden slots and other categories", () => {
+  const source = {
+    site: {},
+    readings: {
+      posts: [
+        { url: "a", category: "evidence", visible: true, title: "A" },
+        { url: "policy", category: "policy", visible: true, title: "Policy" },
+        { url: "b", category: "evidence", visible: true, title: "B" },
+        { url: "hidden", category: "evidence", visible: false, title: "Hidden" },
+        { url: "thinking", category: "thinking", visible: true, title: "Thinking" }
+      ]
+    },
+    podcasts: {},
+    memes: {}
+  };
+  const draft = createDraft(source, "abc");
+
+  assert.equal(
+    draft.reorderCollection("readings:posts", {
+      keyField: "url",
+      keys: ["b", "a"],
+      filterKey: "category",
+      filterValue: "evidence"
+    }),
+    true
+  );
+  assert.deepEqual(draft.read("readings:posts").map((post) => post.url), ["b", "policy", "a", "hidden", "thinking"]);
+  assert.equal(draft.read("readings:posts")[1].title, "Policy");
+  assert.equal(draft.read("readings:posts")[3].visible, false);
+  assert.deepEqual(source.readings.posts.map((post) => post.url), ["a", "policy", "b", "hidden", "thinking"]);
+
+  const saved = JSON.parse(
+    Buffer.from(draft.buildPayload("reorder readings").files[0].contentBase64, "base64").toString("utf8")
+  );
+  assert.deepEqual(saved.posts.map((post) => post.url), ["b", "policy", "a", "hidden", "thinking"]);
+});
+
+test("a no-op reorder leaves the draft clean", () => {
+  const draft = createDraft(files(), "abc");
+  assert.equal(draft.reorderCollection("podcasts:guests", { keys: ["g1"] }), false);
+  assert.equal(draft.isDirty(), false);
+});
+
+test("reordering topics keeps the numeric sort order consistent", () => {
+  const draft = createDraft(
+    {
+      site: {},
+      readings: { topics: [{ slug: "a", order: 1 }, { slug: "b", order: 2 }] },
+      podcasts: {},
+      memes: {}
+    },
+    "abc"
+  );
+
+  assert.equal(
+    draft.reorderCollection("readings:topics", {
+      keyField: "slug",
+      keys: ["b", "a"],
+      orderField: "order"
+    }),
+    true
+  );
+  assert.deepEqual(draft.read("readings:topics"), [{ slug: "b", order: 1 }, { slug: "a", order: 2 }]);
+});
+
+test("new meme tiles can be reordered with existing items", () => {
+  const draft = createDraft(
+    {
+      site: {},
+      readings: {},
+      podcasts: {},
+      memes: { items: [{ key: "meme-1", visible: true, art: { headline: "" } }] }
+    },
+    "abc"
+  );
+  const added = draft.appendMemeItem();
+
+  assert.equal(draft.reorderCollection("memes:items", { keys: [added.key, "meme-1"] }), true);
+  assert.deepEqual(draft.read("memes:items").map((item) => item.key), ["meme-2", "meme-1"]);
+  assert.equal(draft.isNewMeme("meme-2"), true);
+  assert.equal(draft.isDirty(), true);
+});
+
 test("buildPayload is empty when nothing changed", () => {
   assert.deepEqual(createDraft(withSite(), "abc").buildPayload("m").files, []);
 });

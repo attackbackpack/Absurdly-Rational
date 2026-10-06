@@ -37,7 +37,7 @@ permalink: /index.html
         <h2 id="format-title" data-edit="site:home.formats_intro.title">{{ home.formats_intro.title | escape }}</h2>
         <p data-edit="site:home.formats_intro.description">{{ home.formats_intro.description | escape }}</p>
       </div>
-      <div class="format-doors">
+      <div class="format-doors" data-editor-reorder-list="site:home.formats" data-editor-reorder-key-field="key">
         {% for format in home.formats %}
           {% assign format_class = "readings" %}
           {% case format.key %}
@@ -45,7 +45,7 @@ permalink: /index.html
             {% when "podcasts" %}{% assign format_class = "podcasts" %}
             {% when "memes" %}{% assign format_class = "memes" %}
           {% endcase %}
-        <a class="format-door format-door--{{ format_class }}" href="{{ format.url | relative_url }}">
+        <a class="format-door format-door--{{ format_class }}" href="{{ format.url | relative_url }}" data-editor-reorder-key="{{ format.key | escape }}">
           {% assign door_image_path = format.image.path | default: "" %}
           <span class="door-art door-art--{{ format_class }}{% if door_image_path != empty %} door-art--image{% endif %}" data-edit-image="site:home.formats[key={{ format.key }}].image" data-edit-image-decorative aria-hidden="true">
             {% if door_image_path != empty %}

@@ -458,8 +458,8 @@ button { font: inherit; }
   transform: translateY(-5px);
 }
 
-.topic-door--evidence, .topic-door--hospital { grid-column: span 7; }
-.topic-door--policy, .topic-door--thinking { grid-column: span 5; }
+.topic-door[data-editor-reorder-slot="0"], .topic-door[data-editor-reorder-slot="3"] { grid-column: span 7; }
+.topic-door[data-editor-reorder-slot="1"], .topic-door[data-editor-reorder-slot="2"] { grid-column: span 5; }
 
 .topic-door-copy {
   position: relative;
@@ -1002,7 +1002,7 @@ button { font: inherit; }
   .page-intro--meme { padding-bottom: 40px; }
   .reading-topic-shell { padding-top: 126px; }
   .back-link { margin-bottom: 44px; }
-  .topic-door--evidence, .topic-door--policy, .topic-door--thinking, .topic-door--hospital { grid-column: 1 / -1; }
+  .topic-door[data-editor-reorder-slot] { grid-column: 1 / -1; }
   .topic-door { min-height: 20rem; }
   .post-grid { grid-template-columns: 1fr; }
   .post-card--lead { grid-column: auto; }

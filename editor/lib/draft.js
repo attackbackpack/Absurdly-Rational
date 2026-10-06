@@ -196,6 +196,40 @@ export function createDraft(files, baseCommitSha) {
       setValue(working[file], segments, value);
     },
 
+    reorderCollection(spec, { keyField = "key", keys = [], filterKey = "", filterValue = "", orderField = "" } = {}) {
+      const collection = this.read(spec);
+      if (!Array.isArray(collection) || !Array.isArray(keys)) return false;
+
+      const requested = keys.map(String);
+      const requestedSet = new Set(requested);
+      const slots = [];
+      const itemsByKey = new Map();
+      collection.forEach((item, index) => {
+        if (!item || (filterKey && String(item[filterKey]) !== String(filterValue))) return;
+        const key = String(item[keyField]);
+        if (!requestedSet.has(key)) return;
+        slots.push(index);
+        itemsByKey.set(key, item);
+      });
+
+      const ordered = requested.map((key) => itemsByKey.get(key)).filter(Boolean);
+      if (slots.length !== ordered.length || ordered.length < 2) return false;
+      if (slots.every((slot, index) => collection[slot] === ordered[index])) return false;
+
+      slots.forEach((slot, index) => {
+        collection[slot] = ordered[index];
+      });
+
+      // Reading topics are sorted by this field in Liquid. Re-number the
+      // collection after a move so the saved data order and public order agree.
+      if (orderField) {
+        collection.forEach((item, index) => {
+          if (item && typeof item === "object") item[orderField] = index + 1;
+        });
+      }
+      return true;
+    },
+
     appendMemeItem() {
       if (!working.memes || typeof working.memes !== "object" || Array.isArray(working.memes)) {
         working.memes = {};

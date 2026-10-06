@@ -4,7 +4,7 @@ topic: evidence
 ---
 {% assign readings = site.data.readings %}
 {% assign topic = readings.topics | where: "slug", page.topic | first %}
-{% assign topic_posts = readings.posts | where: "category", page.topic | where: "visible", true | sort: "date" | reverse %}
+{% assign topic_posts = readings.posts | where: "category", page.topic | where: "visible", true %}
 {% assign topic_class = "evidence" %}
 {% include head.html seo=topic.seo canonical_path="/readings-evidence.html" schema_type="CollectionPage" schema_name=topic.title schema_description=topic.seo.description preconnect_media=true %}
 <body class="page-readings page-reading-topic" data-page="readings" data-reading-topic="evidence">
@@ -19,16 +19,16 @@ topic: evidence
       <p class="reading-topic-count">{{ topic_posts.size }} {% if topic_posts.size == 1 %}essay{% else %}essays{% endif %}</p>
     </header>
 
-    <nav class="topic-switcher" aria-label="{{ readings.page.topic_switcher_label }}">
+    <nav class="topic-switcher" aria-label="{{ readings.page.topic_switcher_label }}" data-editor-topic-switcher>
       {% assign topics = readings.topics | sort: "order" %}
       {% for sibling in topics %}
-      <a href="{{ sibling.path | relative_url }}"{% if sibling.slug == topic.slug %} aria-current="page"{% endif %}><span data-edit="readings:topics[slug={{ sibling.slug }}].short_title">{{ sibling.short_title | escape }}</span></a>
+      <a href="{{ sibling.path | relative_url }}" data-editor-topic-slug="{{ sibling.slug | escape }}"{% if sibling.slug == topic.slug %} aria-current="page"{% endif %}><span data-edit="readings:topics[slug={{ sibling.slug }}].short_title">{{ sibling.short_title | escape }}</span></a>
       {% endfor %}
     </nav>
 
-    <section class="post-grid" aria-label="{{ topic.aria_label }}">
+    <section class="post-grid" aria-label="{{ topic.aria_label }}" data-editor-reorder-list="readings:posts" data-editor-reorder-key-field="url" data-editor-reorder-filter-key="category" data-editor-reorder-filter-value="{{ page.topic | escape }}" data-editor-reorder-lead="true">
       {% for post in topic_posts %}
-      <article class="post-card{% if forloop.first %} post-card--lead{% endif %}">
+      <article class="post-card{% if forloop.first %} post-card--lead{% endif %}" data-editor-reorder-key="{{ post.url | escape }}">
         <a class="post-card-link" href="{{ post.url }}" target="_blank" rel="noopener noreferrer">
           {% assign post_image_path = post.image.path | default: "" %}
           <span class="post-card-media{% if post_image_path == empty %} post-card-media--fallback{% endif %}" data-edit-image="readings:posts[url={{ post.url }}].image">
