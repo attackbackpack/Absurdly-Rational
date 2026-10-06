@@ -253,6 +253,29 @@ function setCardRect(card, { left, top, width, height }) {
   };
 }
 
+function setFlowCardRects(list, { left = 0, top = 100, columnWidth = 200, width = 100, height = 100 } = {}) {
+  const flowingCards = () => Array.from(list.children).filter((node) =>
+    node.hasAttribute("data-editor-reorder-placeholder") ||
+    (node.hasAttribute("data-editor-reorder-key") && node.style.position !== "fixed")
+  );
+  for (const card of list.children.filter((node) => node.hasAttribute("data-editor-reorder-key"))) {
+    card.getBoundingClientRect = () => {
+      const fixed = card.style.position === "fixed";
+      const slot = flowingCards().indexOf(card);
+      const rectLeft = (fixed ? Number.parseFloat(card.style.left) : left + slot * columnWidth) + (card.animationOffset?.x || 0);
+      const rectTop = (fixed ? Number.parseFloat(card.style.top) : top) + (card.animationOffset?.y || 0);
+      return {
+        left: rectLeft,
+        top: rectTop,
+        right: rectLeft + width,
+        bottom: rectTop + height,
+        width,
+        height
+      };
+    };
+  }
+}
+
 function key(doc, handle, value) {
   doc.dispatch("keydown", { target: handle, key: value });
 }
@@ -264,6 +287,43 @@ function previewKeys(list, draggedKey) {
     if (node.dataset.editorReorderKey === draggedKey && node.classList.contains("ar-reorder-picked")) return [];
     return node.dataset.editorReorderKey ? [node.dataset.editorReorderKey] : [];
   });
+}
+function fourCardGrid() {
+  const items = ["alpha", "bravo", "charlie", "delta"].map((key) => ({
+    key,
+    title: key[0].toUpperCase() + key.slice(1)
+  }));
+  const value = fixture(items);
+  setFlowCardRects(value.list);
+  value.controller = createReorderController({ doc: value.doc, draft: value.draft });
+  value.controller.setEnabled(true);
+  return value;
+}
+
+function startPointerMove(value, sourceIndex, pointerId) {
+  const rect = value.list.children[sourceIndex].getBoundingClientRect();
+  value.doc.dispatch("pointerdown", {
+    target: handles(value.doc)[sourceIndex], button: 0, pointerId,
+    clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
+  });
+}
+
+function pointPointerAt(value, targetKey, pointerId) {
+  const target = value.list.querySelectorAll("[data-editor-reorder-key]")
+    .find((card) => card.dataset.editorReorderKey === targetKey);
+  const rect = target.getBoundingClientRect();
+  value.doc.dispatch("pointermove", {
+    target: value.doc.body, pointerId,
+    clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
+  });
+}
+
+function finishAnimations(list) {
+  list.children.flatMap((card) => card.animations || []).forEach((animation) => animation.finish());
+}
+
+function cardKeys(list) {
+  return list.children.map((node) => node.dataset.editorReorderKey).filter(Boolean);
 }
 
 test("keyboard drop persists a move and restores all grip affordances", () => {
@@ -336,6 +396,78 @@ test("pointer swap threshold is two-thirds of the smaller card footprint", () =>
   above.controller.detach();
 });
 
+test("pointer drops exchange only the source and destination slots and save that order", () => {
+  const firstToThird = fourCardGrid();
+  startPointerMove(firstToThird, 0, 41);
+  pointPointerAt(firstToThird, "charlie", 41);
+  firstToThird.doc.dispatch("pointerup", { target: firstToThird.doc.body, pointerId: 41 });
+  assert.deepEqual(cardKeys(firstToThird.list), ["charlie", "bravo", "alpha", "delta"]);
+  assert.deepEqual(firstToThird.draft.read("site:home.formats").map((item) => item.key), ["charlie", "bravo", "alpha", "delta"]);
+  const saved = JSON.parse(Buffer.from(firstToThird.draft.buildPayload("reorder").files[0].contentBase64, "base64").toString("utf8"));
+  assert.deepEqual(saved.home.formats.map((item) => item.key), ["charlie", "bravo", "alpha", "delta"]);
+  firstToThird.controller.detach();
+
+  const lastToFirst = fourCardGrid();
+  startPointerMove(lastToFirst, 3, 42);
+  pointPointerAt(lastToFirst, "alpha", 42);
+  lastToFirst.doc.dispatch("pointerup", { target: lastToFirst.doc.body, pointerId: 42 });
+  assert.deepEqual(cardKeys(lastToFirst.list), ["delta", "bravo", "charlie", "alpha"]);
+  lastToFirst.controller.detach();
+});
+
+test("pointer previews follow the latest destination instead of accumulating crossed cards", () => {
+  const value = fourCardGrid();
+  startPointerMove(value, 0, 43);
+  pointPointerAt(value, "bravo", 43);
+  assert.deepEqual(previewKeys(value.list, "alpha"), ["bravo", "alpha", "charlie", "delta"]);
+  pointPointerAt(value, "charlie", 43);
+  assert.deepEqual(previewKeys(value.list, "alpha"), ["charlie", "bravo", "alpha", "delta"]);
+  value.doc.dispatch("pointerup", { target: value.doc.body, pointerId: 43 });
+  assert.deepEqual(cardKeys(value.list), ["charlie", "bravo", "alpha", "delta"]);
+  value.controller.detach();
+});
+
+test("repeated pointer positions stay stable and returning to the source slot restores clean order", () => {
+  const value = fourCardGrid();
+  startPointerMove(value, 0, 44);
+  pointPointerAt(value, "charlie", 44);
+  assert.deepEqual(previewKeys(value.list, "alpha"), ["charlie", "bravo", "alpha", "delta"]);
+  value.doc.dispatch("pointermove", { target: value.doc.body, pointerId: 44, clientX: 450, clientY: 150 });
+  value.doc.dispatch("pointermove", { target: value.doc.body, pointerId: 44, clientX: 450, clientY: 150 });
+  assert.deepEqual(previewKeys(value.list, "alpha"), ["charlie", "bravo", "alpha", "delta"]);
+
+  value.doc.dispatch("pointermove", { target: value.doc.body, pointerId: 44, clientX: 900, clientY: 500 });
+  finishAnimations(value.list);
+  pointPointerAt(value, "charlie", 44);
+  assert.deepEqual(previewKeys(value.list, "alpha"), ["alpha", "bravo", "charlie", "delta"]);
+  value.doc.dispatch("pointerup", { target: value.doc.body, pointerId: 44 });
+  assert.deepEqual(cardKeys(value.list), ["alpha", "bravo", "charlie", "delta"]);
+  assert.equal(value.draft.isDirty(), false);
+  value.controller.detach();
+});
+
+test("keyboard arrows select a destination slot from the pickup order", () => {
+  const value = fourCardGrid();
+  const handle = handles(value.doc)[0];
+  value.doc.activeElement = handle;
+  key(value.doc, handle, " ");
+  key(value.doc, handle, "ArrowDown");
+  key(value.doc, handle, "ArrowDown");
+  key(value.doc, handle, "ArrowUp");
+  key(value.doc, handle, "ArrowUp");
+  key(value.doc, handle, " ");
+  assert.deepEqual(cardKeys(value.list), ["alpha", "bravo", "charlie", "delta"]);
+  assert.equal(value.draft.isDirty(), false);
+
+  key(value.doc, handle, " ");
+  key(value.doc, handle, "ArrowDown");
+  key(value.doc, handle, "ArrowDown");
+  key(value.doc, handle, " ");
+  assert.deepEqual(cardKeys(value.list), ["charlie", "bravo", "alpha", "delta"]);
+  assert.deepEqual(value.draft.read("site:home.formats").map((item) => item.key), ["charlie", "bravo", "alpha", "delta"]);
+  value.controller.detach();
+});
+
 test("overlap is normalized to the smaller footprint for different-size cards", () => {
   const wideActive = fixture();
   setCardRect(wideActive.list.children[0], { left: 100, top: 100, width: 100, height: 100 });
@@ -376,15 +508,15 @@ test("left and upward full-card overlap swaps in a single column without oscilla
   const charlieHandle = handles(doc)[2];
   doc.dispatch("pointerdown", { target: charlieHandle, button: 0, pointerId: 34, clientX: 90, clientY: 450 });
   doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 130 });
-  assert.deepEqual(previewKeys(list, "charlie"), ["charlie", "alpha", "bravo"]);
+  assert.deepEqual(previewKeys(list, "charlie"), ["charlie", "bravo", "alpha"]);
 
   // Repeated positions over the same card stay in place while its FLIP
   // animation is running; moving away rearms that target for a return path.
   doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 130 });
   doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 130 });
-  assert.deepEqual(previewKeys(list, "charlie"), ["charlie", "alpha", "bravo"]);
+  assert.deepEqual(previewKeys(list, "charlie"), ["charlie", "bravo", "alpha"]);
   doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 290, clientY: 290 });
-  doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 290 });
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 130 });
   assert.deepEqual(previewKeys(list, "charlie"), ["alpha", "bravo", "charlie"]);
   doc.dispatch("pointerup", { target: doc.body, pointerId: 34 });
 

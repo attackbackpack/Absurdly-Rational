@@ -9,7 +9,7 @@ pull request are not part of this workflow.
 1. Open the editor and sign in with the editor password.
 2. Use the site navigation inside the editor to open the page you want to change.
 3. Hover over highlighted text or images and make the edit.
-4. To change the order of cards, click **Reorder cards**. Drag a grip, or focus a grip and press Space, use the arrow keys, then press Space to drop. Press Escape to cancel, or click **Done rearranging** to leave the mode.
+4. To change the order of cards, click **Reorder cards**. Drag a grip, or focus a grip and press Space, use the arrow keys to choose a destination, then press Space to drop. Each preview exchanges the picked card with its destination; cards passed over stay in their slots. Press Escape to cancel, or click **Done rearranging** to leave the mode.
 5. Click **Save & publish**, then confirm that the change should update the public website.
 6. Wait about a minute for GitHub Pages to rebuild the site, then click **Reload site**.
 

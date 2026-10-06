@@ -108,6 +108,15 @@ function sameOrder(first, second) {
   return first.length === second.length && first.every((value, index) => value === second[index]);
 }
 
+function exchangeAt(items, moving, destinationIndex) {
+  const sourceIndex = items.indexOf(moving);
+  if (sourceIndex < 0 || destinationIndex < 0 || destinationIndex >= items.length) return items;
+  const next = [...items];
+  next[sourceIndex] = items[destinationIndex];
+  next[destinationIndex] = moving;
+  return next;
+}
+
 function snapshot(container, excluded = null) {
   const positions = new Map();
   for (const node of collectionItems(container, excluded)) positions.set(node, node.getBoundingClientRect());
@@ -449,6 +458,7 @@ export function createReorderController({ doc, draft, onChange, onMessage }) {
       item,
       handle,
       originalItems: [...items],
+      previewItems: [...items],
       originalKeys: items.map((card) => card.dataset.editorReorderKey),
       label: handle.getAttribute("aria-label").replace(/^Move /, "").replace(/\.$/, "")
     };
@@ -459,17 +469,18 @@ export function createReorderController({ doc, draft, onChange, onMessage }) {
 
   const moveKeyboard = (delta) => {
     const session = active;
-    const items = collectionItems(session.container);
-    const index = items.indexOf(session.item);
-    const nextIndex = Math.max(0, Math.min(items.length - 1, index + delta));
+    const index = session.previewItems.indexOf(session.item);
+    const nextIndex = Math.max(0, Math.min(session.previewItems.length - 1, index + delta));
     if (nextIndex === index) {
       announcePosition(session, "At the edge:");
       return;
     }
+    const nextOrder = exchangeAt(session.originalItems, session.item, nextIndex);
+    if (sameOrder(session.previewItems, nextOrder)) return;
     cancelAnimations();
     const before = snapshot(session.container);
-    if (delta < 0) session.container.insertBefore(session.item, items[nextIndex]);
-    else items[nextIndex].after(session.item);
+    session.previewItems = nextOrder;
+    for (const card of nextOrder) placeBeforePinned(session.container, card);
     updatePositionRoles(session.container);
     moveAnimations(session.container, before, null, animations, view, scheduleHandlePositions);
     announcePosition(session, "Picked up");
@@ -531,6 +542,7 @@ export function createReorderController({ doc, draft, onChange, onMessage }) {
       grabY: event.clientY - rect.top,
       moved: false,
       originalItems: [...items],
+      previewItems: [...items],
       originalKeys: items.map((card) => card.dataset.editorReorderKey),
       blockedTargets: new Set(),
       styleAttribute: item.hasAttribute("style") ? item.getAttribute("style") : null,
@@ -556,26 +568,27 @@ export function createReorderController({ doc, draft, onChange, onMessage }) {
   };
 
   const movePlaceholder = (session, target) => {
-    const current = flowingItems(session.container, session);
-    const placeholderIndex = current.indexOf(session.placeholder);
-    if (target.hasAttribute("data-editor-meme-add") && placeholderIndex === current.length - 1) return false;
-    if (!target.hasAttribute("data-editor-meme-add") && current.indexOf(target) === -1) return false;
+    const destinationIndex = target.hasAttribute("data-editor-meme-add")
+      ? session.originalItems.length - 1
+      : session.previewItems.indexOf(target);
+    const nextOrder = exchangeAt(session.originalItems, session.item, destinationIndex);
+    if (sameOrder(session.previewItems, nextOrder)) return false;
 
-    const previousIndex = flowingItems(session.container, session).indexOf(session.placeholder);
+    const previousIndex = session.previewItems.indexOf(session.item);
     cancelAnimations();
     const currentBefore = snapshot(session.container, session.item);
-    if (target.hasAttribute("data-editor-meme-add")) {
-      session.container.insertBefore(session.placeholder, target);
-    } else {
-      const targetIndex = current.indexOf(target);
-      if (targetIndex < placeholderIndex) target.before(session.placeholder);
-      else target.after(session.placeholder);
+    session.previewItems = nextOrder;
+    let before = pinnedControl(session.container);
+    for (const card of [...nextOrder].reverse()) {
+      const node = card === session.item ? session.placeholder : card;
+      session.container.insertBefore(node, before);
+      before = node;
     }
     updatePositionRoles(session.container, session);
     rememberPointerLayout(session);
     moveAnimations(session.container, currentBefore, session.item, animations, view, scheduleHandlePositions);
     scheduleHandlePositions();
-    const nextIndex = flowingItems(session.container, session).indexOf(session.placeholder);
+    const nextIndex = session.previewItems.indexOf(session.item);
     if (nextIndex !== previousIndex) announcePosition(session, "Moving");
     return nextIndex !== previousIndex;
   };
