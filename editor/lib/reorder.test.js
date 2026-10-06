@@ -218,13 +218,15 @@ class FakeDocument {
   }
 }
 
-function fixture() {
+function fixture(items = data().site.home.formats) {
+  const contents = data();
+  contents.site.home.formats = items;
   const doc = new FakeDocument();
   const list = doc.createElement("div");
   list.dataset.editorReorderList = "site:home.formats";
   list.dataset.editorReorderKeyField = "key";
   doc.body.appendChild(list);
-  for (const [key, title] of [["alpha", "Alpha"], ["bravo", "Bravo"], ["charlie", "Charlie"]]) {
+  for (const { key, title } of items) {
     const card = doc.createElement("a");
     card.dataset.editorReorderKey = key;
     const field = doc.createElement("span");
@@ -233,7 +235,22 @@ function fixture() {
     card.appendChild(field);
     list.appendChild(card);
   }
-  return { doc, list, draft: createDraft(data(), "base") };
+  return { doc, list, draft: createDraft(contents, "base") };
+}
+
+function setCardRect(card, { left, top, width, height }) {
+  card.getBoundingClientRect = () => {
+    const rectLeft = (card.style.position === "fixed" ? Number.parseFloat(card.style.left) : left) + (card.animationOffset?.x || 0);
+    const rectTop = (card.style.position === "fixed" ? Number.parseFloat(card.style.top) : top) + (card.animationOffset?.y || 0);
+    return {
+      left: rectLeft,
+      top: rectTop,
+      right: rectLeft + width,
+      bottom: rectTop + height,
+      width,
+      height
+    };
+  };
 }
 
 function key(doc, handle, value) {
@@ -241,6 +258,13 @@ function key(doc, handle, value) {
 }
 
 function handles(doc) { return doc.body.querySelectorAll(".ar-reorder-handle"); }
+function previewKeys(list, draggedKey) {
+  return list.children.flatMap((node) => {
+    if (node.hasAttribute("data-editor-reorder-placeholder")) return [draggedKey];
+    if (node.dataset.editorReorderKey === draggedKey && node.classList.contains("ar-reorder-picked")) return [];
+    return node.dataset.editorReorderKey ? [node.dataset.editorReorderKey] : [];
+  });
+}
 
 test("keyboard drop persists a move and restores all grip affordances", () => {
   const { doc, list, draft } = fixture();
@@ -259,6 +283,113 @@ test("keyboard drop persists a move and restores all grip affordances", () => {
   assert.ok(handles(doc).every((grip) => grip.style.opacity === "1" && grip.style.pointerEvents === "auto"));
   assert.deepEqual(handles(doc).map((grip) => grip.getAttribute("aria-label")), ["Move Bravo.", "Move Alpha.", "Move Charlie."]);
   assert.equal(doc.activeElement, handle);
+  controller.detach();
+});
+
+test("regression: mostly covering a card swaps it even when the grip is outside that card", () => {
+  const { doc, list, draft } = fixture();
+  list.getBoundingClientRect = () => ({ left: 0, top: 0, right: 1200, bottom: 900, width: 1200, height: 900 });
+  setCardRect(list.children[0], { left: 15, top: 400, width: 363, height: 220 });
+  setCardRect(list.children[1], { left: 400, top: 400, width: 363, height: 220 });
+  setCardRect(list.children[2], { left: 785, top: 400, width: 363, height: 220 });
+  const controller = createReorderController({ doc, draft });
+  controller.setEnabled(true);
+  const handle = handles(doc)[1];
+  doc.dispatch("pointerdown", { target: handle, button: 0, pointerId: 21, clientX: 790, clientY: 443 });
+  // The dragged 363×220 card now covers 98% of alpha, while the grip hotspot
+  // sits to alpha's right in the gap. The prior midpoint targeting kept it put.
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 21, clientX: 412, clientY: 443 });
+  doc.dispatch("pointerup", { target: doc.body, pointerId: 21 });
+
+  assert.deepEqual(list.children.map((node) => node.dataset.editorReorderKey), ["bravo", "alpha", "charlie"]);
+  assert.deepEqual(draft.read("site:home.formats").map((item) => item.key), ["bravo", "alpha", "charlie"]);
+  controller.detach();
+});
+
+test("pointer swap threshold is two-thirds of the smaller card footprint", () => {
+  const makeFixture = () => {
+    const { doc, list, draft } = fixture();
+    setCardRect(list.children[0], { left: 0, top: 100, width: 100, height: 100 });
+    setCardRect(list.children[1], { left: 100, top: 100, width: 100, height: 100 });
+    setCardRect(list.children[2], { left: 500, top: 100, width: 100, height: 100 });
+    const controller = createReorderController({ doc, draft });
+    controller.setEnabled(true);
+    const handle = handles(doc)[1];
+    doc.dispatch("pointerdown", { target: handle, button: 0, pointerId: 31, clientX: 190, clientY: 150 });
+    return { doc, list, draft, controller };
+  };
+
+  const below = makeFixture();
+  below.doc.dispatch("pointermove", { target: below.doc.body, pointerId: 31, clientX: 124, clientY: 150 });
+  below.doc.dispatch("pointerup", { target: below.doc.body, pointerId: 31 });
+  assert.deepEqual(below.list.children.map((node) => node.dataset.editorReorderKey), ["alpha", "bravo", "charlie"]);
+  assert.equal(below.draft.isDirty(), false);
+  below.controller.detach();
+
+  const above = makeFixture();
+  above.doc.dispatch("pointermove", { target: above.doc.body, pointerId: 31, clientX: 123, clientY: 150 });
+  above.doc.dispatch("pointerup", { target: above.doc.body, pointerId: 31 });
+  assert.deepEqual(above.list.children.map((node) => node.dataset.editorReorderKey), ["bravo", "alpha", "charlie"]);
+  assert.deepEqual(above.draft.read("site:home.formats").map((item) => item.key), ["bravo", "alpha", "charlie"]);
+  const saved = JSON.parse(Buffer.from(above.draft.buildPayload("reorder").files[0].contentBase64, "base64").toString("utf8"));
+  assert.deepEqual(saved.home.formats.map((item) => item.key), ["bravo", "alpha", "charlie"]);
+  above.controller.detach();
+});
+
+test("overlap is normalized to the smaller footprint for different-size cards", () => {
+  const wideActive = fixture();
+  setCardRect(wideActive.list.children[0], { left: 100, top: 100, width: 100, height: 100 });
+  setCardRect(wideActive.list.children[1], { left: 200, top: 100, width: 200, height: 100 });
+  setCardRect(wideActive.list.children[2], { left: 500, top: 100, width: 100, height: 100 });
+  const firstController = createReorderController({ doc: wideActive.doc, draft: wideActive.draft });
+  firstController.setEnabled(true);
+  wideActive.doc.dispatch("pointerdown", { target: handles(wideActive.doc)[1], button: 0, pointerId: 32, clientX: 290, clientY: 150 });
+  // The wide dragged card overlaps only half its own area, but fully covers
+  // the smaller target, which is the footprint used for the threshold.
+  wideActive.doc.dispatch("pointermove", { target: wideActive.doc.body, pointerId: 32, clientX: 190, clientY: 150 });
+  wideActive.doc.dispatch("pointerup", { target: wideActive.doc.body, pointerId: 32 });
+  assert.deepEqual(wideActive.list.children.map((node) => node.dataset.editorReorderKey), ["bravo", "alpha", "charlie"]);
+  firstController.detach();
+
+  const smallActive = fixture();
+  setCardRect(smallActive.list.children[0], { left: 0, top: 100, width: 200, height: 100 });
+  setCardRect(smallActive.list.children[1], { left: 200, top: 100, width: 100, height: 100 });
+  setCardRect(smallActive.list.children[2], { left: 500, top: 100, width: 100, height: 100 });
+  const secondController = createReorderController({ doc: smallActive.doc, draft: smallActive.draft });
+  secondController.setEnabled(true);
+  smallActive.doc.dispatch("pointerdown", { target: handles(smallActive.doc)[1], button: 0, pointerId: 33, clientX: 290, clientY: 150 });
+  // A 70% overlap of the small dragged card is enough, even though that is
+  // only 35% of the wider target's area.
+  smallActive.doc.dispatch("pointermove", { target: smallActive.doc.body, pointerId: 33, clientX: 220, clientY: 150 });
+  smallActive.doc.dispatch("pointerup", { target: smallActive.doc.body, pointerId: 33 });
+  assert.deepEqual(smallActive.list.children.map((node) => node.dataset.editorReorderKey), ["bravo", "alpha", "charlie"]);
+  secondController.detach();
+});
+
+test("left and upward full-card overlap swaps in a single column without oscillating and allows backtracking", () => {
+  const { doc, list, draft } = fixture();
+  setCardRect(list.children[0], { left: 40, top: 80, width: 100, height: 100 });
+  setCardRect(list.children[1], { left: 40, top: 240, width: 100, height: 100 });
+  setCardRect(list.children[2], { left: 40, top: 400, width: 100, height: 100 });
+  const controller = createReorderController({ doc, draft });
+  controller.setEnabled(true);
+  const charlieHandle = handles(doc)[2];
+  doc.dispatch("pointerdown", { target: charlieHandle, button: 0, pointerId: 34, clientX: 90, clientY: 450 });
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 130 });
+  assert.deepEqual(previewKeys(list, "charlie"), ["charlie", "alpha", "bravo"]);
+
+  // Repeated positions over the same card stay in place while its FLIP
+  // animation is running; moving away rearms that target for a return path.
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 130 });
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 130 });
+  assert.deepEqual(previewKeys(list, "charlie"), ["charlie", "alpha", "bravo"]);
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 290, clientY: 290 });
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 34, clientX: 90, clientY: 290 });
+  assert.deepEqual(previewKeys(list, "charlie"), ["alpha", "bravo", "charlie"]);
+  doc.dispatch("pointerup", { target: doc.body, pointerId: 34 });
+
+  assert.deepEqual(list.children.map((node) => node.dataset.editorReorderKey), ["alpha", "bravo", "charlie"]);
+  assert.equal(draft.isDirty(), false);
   controller.detach();
 });
 
@@ -304,9 +435,10 @@ test("pointer cancellation restores order and auto-scroll stops with the drag", 
   const grips = handles(doc);
   const handle = grips[0];
   const thirdCard = list.children[2];
+  setCardRect(thirdCard, { left: 100, top: 560, width: 200, height: 80 });
   doc.hitTarget = thirdCard;
   doc.dispatch("pointerdown", { target: handle, button: 0, pointerId: 9, clientX: 110, clientY: 110 });
-  doc.dispatch("pointermove", { target: doc.body, pointerId: 9, clientX: 150, clientY: 590 });
+  doc.dispatch("pointermove", { target: doc.body, pointerId: 9, clientX: 150, clientY: 570 });
 
   assert.ok(messages.some((message) => message.includes("Moving Alpha. Position 3 of 3.")));
   const placeholder = list.querySelector("[data-editor-reorder-placeholder]");

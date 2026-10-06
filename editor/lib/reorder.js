@@ -13,6 +13,8 @@ const REORDER_STYLE = `
   [data-editor-reorder-active] [data-editor-reorder-key] { animation: none !important; transition: none !important; }
 }
 `;
+const POINTER_SWAP_OVERLAP = 2 / 3;
+const POINTER_SWAP_REARM = 1 / 2;
 
 function collectionItems(container, excluded = null) {
   return Array.from(container.children).filter(
@@ -110,6 +112,13 @@ function snapshot(container, excluded = null) {
   const positions = new Map();
   for (const node of collectionItems(container, excluded)) positions.set(node, node.getBoundingClientRect());
   return positions;
+}
+
+function overlapRatio(first, second) {
+  const width = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
+  const height = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+  const smallerArea = Math.max(1, Math.min(first.width * first.height, second.width * second.height));
+  return (width * height) / smallerArea;
 }
 
 function flowingItems(container, session) {
@@ -467,6 +476,30 @@ export function createReorderController({ doc, draft, onChange, onMessage }) {
     scheduleHandlePositions();
   };
 
+  const rememberPointerLayout = (session) => {
+    const bounds = snapshot(session.container, session.item);
+    const pinned = pinnedControl(session.container);
+    if (pinned) bounds.set(pinned, pinned.getBoundingClientRect());
+    session.layoutBounds = bounds;
+    session.layoutScrollX = view.scrollX;
+    session.layoutScrollY = view.scrollY;
+  };
+
+  const pointerLayoutRect = (session, node) => {
+    const rect = session.layoutBounds.get(node);
+    if (!rect) return node.getBoundingClientRect();
+    const x = session.layoutScrollX - view.scrollX;
+    const y = session.layoutScrollY - view.scrollY;
+    return {
+      left: rect.left + x,
+      right: rect.right + x,
+      top: rect.top + y,
+      bottom: rect.bottom + y,
+      width: rect.width,
+      height: rect.height
+    };
+  };
+
   const beginPointer = (event, handle, item) => {
     if (event.button !== undefined && event.button !== 0) return;
     const container = item.parentElement;
@@ -499,6 +532,7 @@ export function createReorderController({ doc, draft, onChange, onMessage }) {
       moved: false,
       originalItems: [...items],
       originalKeys: items.map((card) => card.dataset.editorReorderKey),
+      blockedTargets: new Set(),
       styleAttribute: item.hasAttribute("style") ? item.getAttribute("style") : null,
       label: handle.getAttribute("aria-label").replace(/^Move /, "").replace(/\.$/, "")
     };
@@ -515,63 +549,55 @@ export function createReorderController({ doc, draft, onChange, onMessage }) {
     item.style.setProperty("transform", "none", "important");
     item.style.setProperty("transition", "none", "important");
     updatePositionRoles(container, session);
+    rememberPointerLayout(session);
     toggleHandlesForSession(true);
     try { handle.setPointerCapture(event.pointerId); } catch {}
     announce(`Picked up ${session.label}. Drag to a new position. Release to drop or press Escape to cancel.`);
   };
 
-  const pointerBeforeTarget = (container, target, x, y) => {
-    const rect = target.getBoundingClientRect();
-    const sameRow = collectionItems(container).some((peer) => {
-      if (peer === target || peer === active?.item) return false;
-      const other = peer.getBoundingClientRect();
-      const overlap = Math.min(rect.bottom, other.bottom) - Math.max(rect.top, other.top);
-      return overlap > Math.min(rect.height, other.height) * 0.5;
-    });
-    return sameRow ? x < rect.left + rect.width / 2 : y < rect.top + rect.height / 2;
-  };
+  const movePlaceholder = (session, target) => {
+    const current = flowingItems(session.container, session);
+    const placeholderIndex = current.indexOf(session.placeholder);
+    if (target.hasAttribute("data-editor-meme-add") && placeholderIndex === current.length - 1) return false;
+    if (!target.hasAttribute("data-editor-meme-add") && current.indexOf(target) === -1) return false;
 
-  const movePlaceholder = (session, target, before) => {
     const previousIndex = flowingItems(session.container, session).indexOf(session.placeholder);
     cancelAnimations();
     const currentBefore = snapshot(session.container, session.item);
     if (target.hasAttribute("data-editor-meme-add")) {
       session.container.insertBefore(session.placeholder, target);
-    } else if (before) {
-      target.before(session.placeholder);
     } else {
-      target.after(session.placeholder);
+      const targetIndex = current.indexOf(target);
+      if (targetIndex < placeholderIndex) target.before(session.placeholder);
+      else target.after(session.placeholder);
     }
     updatePositionRoles(session.container, session);
+    rememberPointerLayout(session);
     moveAnimations(session.container, currentBefore, session.item, animations, view, scheduleHandlePositions);
     scheduleHandlePositions();
     const nextIndex = flowingItems(session.container, session).indexOf(session.placeholder);
     if (nextIndex !== previousIndex) announcePosition(session, "Moving");
+    return nextIndex !== previousIndex;
   };
 
   const updatePointerPosition = (session, x, y) => {
     session.item.style.setProperty("left", `${x - session.grabX}px`, "important");
     session.item.style.setProperty("top", `${y - session.grabY}px`, "important");
+    const draggedRect = session.item.getBoundingClientRect();
+    const targets = [...collectionItems(session.container, session.item), pinnedControl(session.container)].filter(Boolean);
+    const overlaps = targets.map((target) => ({ target, ratio: overlapRatio(draggedRect, pointerLayoutRect(session, target)) }));
 
-    const hit = doc.elementFromPoint(x, y);
-    let target = hit?.closest?.("[data-editor-reorder-key], [data-editor-meme-add]");
-    if (target && target.parentElement !== session.container) target = null;
-    if (!target) {
-      const box = session.container.getBoundingClientRect();
-      if (x < box.left || x > box.right || y < box.top || y > box.bottom) return;
-      target = collectionItems(session.container, session.item).reduce((closest, node) => {
-        const rect = node.getBoundingClientRect();
-        const dx = x - (rect.left + rect.width / 2);
-        const dy = y - (rect.top + rect.height / 2);
-        const distanceSquared = dx * dx + dy * dy;
-        return !closest || distanceSquared < closest.distance ? { node, distance: distanceSquared } : closest;
-      }, null)?.node || pinnedControl(session.container);
+    for (const target of session.blockedTargets) {
+      const overlap = overlaps.find((entry) => entry.target === target);
+      if (!overlap || overlap.ratio <= POINTER_SWAP_REARM) session.blockedTargets.delete(target);
     }
-    if (!target || target === session.item || target === session.placeholder) return;
-    const before = target.hasAttribute("data-editor-meme-add")
-      ? true
-      : pointerBeforeTarget(session.container, target, x, y);
-    movePlaceholder(session, target, before);
+
+    const candidate = overlaps
+      .filter(({ target, ratio }) => ratio >= POINTER_SWAP_OVERLAP && !session.blockedTargets.has(target))
+      .sort((first, second) => second.ratio - first.ratio)[0]?.target;
+    if (!candidate) return;
+
+    if (movePlaceholder(session, candidate)) session.blockedTargets.add(candidate);
   };
 
   const edgeScroll = (session) => {
